@@ -1,0 +1,152 @@
+{
+  "methodology": "Real re-execution of src/ssm/ssm_engine.py over the same 30 real AEROBIC sessions used in experiment_03, sweeping one parameter at a time with the other two held at their frozen defaults (T_max=900s, R_max=10, A_th=0.5). Not a hypothetical -- every point below is a real run of the same engine against the same real data.",
+  "defaults_held_when_not_swept": {
+    "T_MAX_SEC": 900,
+    "R_MAX": 10,
+    "A_TH": 0.5
+  },
+  "t_max_sweep_minutes": [
+    {
+      "T_max_min": 1,
+      "savings_pct_vs_always_full": 69.4,
+      "mean_full_per_session": 33.167,
+      "mean_resume_per_session": 75.933
+    },
+    {
+      "T_max_min": 3,
+      "savings_pct_vs_always_full": 82.87,
+      "mean_full_per_session": 18.433,
+      "mean_resume_per_session": 90.667
+    },
+    {
+      "T_max_min": 5,
+      "savings_pct_vs_always_full": 83.72,
+      "mean_full_per_session": 17.5,
+      "mean_resume_per_session": 91.6
+    },
+    {
+      "T_max_min": 10,
+      "savings_pct_vs_always_full": 83.72,
+      "mean_full_per_session": 17.5,
+      "mean_resume_per_session": 91.6
+    },
+    {
+      "T_max_min": 15,
+      "savings_pct_vs_always_full": 83.72,
+      "mean_full_per_session": 17.5,
+      "mean_resume_per_session": 91.6
+    },
+    {
+      "T_max_min": 30,
+      "savings_pct_vs_always_full": 83.72,
+      "mean_full_per_session": 17.5,
+      "mean_resume_per_session": 91.6
+    },
+    {
+      "T_max_min": 60,
+      "savings_pct_vs_always_full": 83.72,
+      "mean_full_per_session": 17.5,
+      "mean_resume_per_session": 91.6
+    }
+  ],
+  "a_th_sweep": [
+    {
+      "A_th": 0.1,
+      "savings_pct_vs_always_full": 26.84,
+      "mean_full_per_session": 79.733,
+      "mean_resume_per_session": 29.367
+    },
+    {
+      "A_th": 0.2,
+      "savings_pct_vs_always_full": 52.7,
+      "mean_full_per_session": 51.433,
+      "mean_resume_per_session": 57.667
+    },
+    {
+      "A_th": 0.3,
+      "savings_pct_vs_always_full": 69.55,
+      "mean_full_per_session": 33.0,
+      "mean_resume_per_session": 76.1
+    },
+    {
+      "A_th": 0.4,
+      "savings_pct_vs_always_full": 78.23,
+      "mean_full_per_session": 23.5,
+      "mean_resume_per_session": 85.6
+    },
+    {
+      "A_th": 0.5,
+      "savings_pct_vs_always_full": 83.72,
+      "mean_full_per_session": 17.5,
+      "mean_resume_per_session": 91.6
+    },
+    {
+      "A_th": 0.6,
+      "savings_pct_vs_always_full": 86.28,
+      "mean_full_per_session": 14.7,
+      "mean_resume_per_session": 94.4
+    },
+    {
+      "A_th": 0.7,
+      "savings_pct_vs_always_full": 87.89,
+      "mean_full_per_session": 12.933,
+      "mean_resume_per_session": 96.167
+    },
+    {
+      "A_th": 0.8,
+      "savings_pct_vs_always_full": 90.15,
+      "mean_full_per_session": 10.467,
+      "mean_resume_per_session": 98.633
+    },
+    {
+      "A_th": 0.9,
+      "savings_pct_vs_always_full": 90.15,
+      "mean_full_per_session": 10.467,
+      "mean_resume_per_session": 98.633
+    },
+    {
+      "A_th": 1.0,
+      "savings_pct_vs_always_full": 90.15,
+      "mean_full_per_session": 10.467,
+      "mean_resume_per_session": 98.633
+    }
+  ],
+  "r_max_sweep": [
+    {
+      "R_max": 2,
+      "savings_pct_vs_always_full": 62.0,
+      "mean_full_per_session": 41.267,
+      "mean_resume_per_session": 67.833
+    },
+    {
+      "R_max": 5,
+      "savings_pct_vs_always_full": 77.17,
+      "mean_full_per_session": 24.667,
+      "mean_resume_per_session": 84.433
+    },
+    {
+      "R_max": 10,
+      "savings_pct_vs_always_full": 83.72,
+      "mean_full_per_session": 17.5,
+      "mean_resume_per_session": 91.6
+    },
+    {
+      "R_max": 15,
+      "savings_pct_vs_always_full": 85.79,
+      "mean_full_per_session": 15.233,
+      "mean_resume_per_session": 93.867
+    },
+    {
+      "R_max": 20,
+      "savings_pct_vs_always_full": 87.16,
+      "mean_full_per_session": 13.733,
+      "mean_resume_per_session": 95.367
+    },
+    {
+      "R_max": 30,
+      "savings_pct_vs_always_full": 87.95,
+      "mean_full_per_session": 12.867,
+      "mean_resume_per_session": 96.233
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+# Core dependencies actually imported by this project (verified by grepping
+# every import/from statement under src/, experiments/, tests/).
+# Version FLOORS are given here for normal installs; for the exact versions
+# this rebuild was developed and verified against, use requirements-lock.txt.
+
+cryptography>=42.0.0      # Ed25519, HMAC-SHA256, AES-128-GCM, HKDF-SHA256
+kyber-py>=1.0.0            # pure-Python ML-KEM-512 (FIPS 203)
+matplotlib>=3.8.0          # figure generation (src/analysis/generate_tables_figures.py)
+numpy>=1.26.0              # figure generation (bar chart positioning)
+
+# Standard-library only otherwise: csv, json, os, sys, re, math, statistics,
+# hashlib, hmac, struct, datetime, time, platform, subprocess, argparse,
+# dataclasses, typing, urllib, zipfile, importlib.
+# No web-request library (requests, httpx, ...) is required — the dataset
+# downloader (src/preprocessing/download_dataset.py) uses urllib only.
+
+# Formal verification (external tool, not a Python package):
+#   ProVerif >= 2.05 -- https://bblanche.gitlabpages.inria.fr/proverif/
+#   Must be on PATH as `proverif` to run formal_verification/*.pv.

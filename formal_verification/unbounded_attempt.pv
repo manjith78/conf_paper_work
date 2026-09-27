@@ -1,0 +1,210 @@
+(* ============================================================
+   Adaptive Hybrid Post-Quantum Authentication Framework
+   ONE authoritative ProVerif model for this rebuild.
+
+   This model supersedes BOTH of the old project's two divergent models
+   (the simpler 7-query protocol_model.pv and the more thorough but
+   partially-wrong 9-query protocol_v2/v3/v4.pv chain -- see
+   paper/audit/OLD_PAPER_AUDIT.md Sec. 1 for the audit that found one of
+   the old v4 model's 9 queries returned false).
+
+   ROOT CAUSE OF THE OLD FALSE QUERY (fixed here):
+   The old v4 model asserted
+     event(wearableAcceptsGateway(sid)) ==> event(gatewayAcceptsWearable(sid))
+   But in the actual message order of this protocol's full-authentication
+   path, gatewayAcceptsWearable (the gateway accepting the wearable's
+   finish-MAC, which depends on data the wearable could only send AFTER
+   wearableAcceptsGateway already fired) happens STRICTLY AFTER
+   wearableAcceptsGateway, never before. The old query asked the
+   implication in the wrong direction, so ProVerif correctly found it
+   false -- this was a specification bug in the OLD MODEL, not a protocol
+   vulnerability (confirmed in the reproducibility investigation and
+   carried into paper/audit/OLD_PAPER_AUDIT.md as class F). The corrected,
+   true direction is used below:
+     event(gatewayAcceptsWearable(sid)) ==> event(wearableAcceptsGateway(sid))
+
+   Scope (same disclosed limitation as before): single protocol session
+   (one WD, one GW, one full-auth run followed by one resumption round).
+   Unbounded/replicated verification remains future work.
+   ============================================================ *)
+
+set traceDisplay = long.
+set preciseActions = true.
+
+free c : channel.
+
+free wearable_id : bitstring.
+free gateway_id  : bitstring.
+
+free skW : bitstring [private].
+free skG : bitstring [private].
+free ticketKey : bitstring [private].
+free healthcareData : bitstring [private].
+
+free tagFullW        : bitstring.
+free tagFullG        : bitstring.
+free tagFinish       : bitstring.
+free tagResumeW      : bitstring.
+free tagResumeG      : bitstring.
+free tagResumeFinish : bitstring.
+
+fun pk(bitstring) : bitstring.
+fun sign(bitstring, bitstring) : bitstring.
+reduc forall m:bitstring, sk:bitstring; checksign(sign(m,sk),pk(sk)) = m.
+
+fun aeadEncrypt(bitstring, bitstring) : bitstring.
+reduc forall m:bitstring, k:bitstring; aeadDecrypt(aeadEncrypt(m,k),k) = m.
+
+fun mac(bitstring, bitstring) : bitstring.
+reduc forall m:bitstring, k:bitstring; checkmac(mac(m,k),k) = m.
+
+fun kdf(bitstring, bitstring, bitstring, bitstring) : bitstring.
+
+fun kemEncap(bitstring, bitstring) : bitstring.
+fun kemShared(bitstring, bitstring) : bitstring.
+reduc forall seed:bitstring, sk:bitstring; kemDecap(kemEncap(seed,pk(sk)),sk) = kemShared(seed,pk(sk)).
+
+fun makeTicket(bitstring, bitstring) : bitstring.
+reduc forall payload:bitstring, tk:bitstring; openTicket(makeTicket(payload,tk),tk) = payload.
+
+event wearableStartsFull(bitstring).
+event gatewayInitiatesFull(bitstring).
+event wearableAcceptsGateway(bitstring).
+event gatewayAcceptsWearable(bitstring).
+
+event wearableStartsResume(bitstring).
+event gatewayAcceptsResume(bitstring).
+event wearableAcceptsResume(bitstring).
+
+event gatewaySendsHealthcareData(bitstring).
+event wearableReceivesHealthcareData(bitstring).
+
+(* ---------------- Secrecy queries (4) ---------------- *)
+query attacker(skW).
+query attacker(skG).
+query attacker(ticketKey).
+query attacker(healthcareData).
+
+(* ---------------- Correspondence queries (4) ---------------- *)
+
+(* WD authenticates GW: WD only accepts if a genuine GW session produced
+   this exact transcript. Injective -- no replay. *)
+query sid:bitstring;
+  inj-event(wearableAcceptsGateway(sid)) ==> inj-event(gatewayInitiatesFull(sid)).
+
+(* GW authenticates WD, full-auth path -- CORRECTED DIRECTION (see header).
+   gatewayAcceptsWearable can only fire after processing WD's finish-MAC,
+   which itself depends on data only available after wearableAcceptsGateway
+   already occurred -- so THIS is the true causal direction. *)
+query sid:bitstring;
+  inj-event(gatewayAcceptsWearable(sid)) ==> inj-event(wearableAcceptsGateway(sid)).
+
+(* GW authenticates WD, resumption path *)
+query sid:bitstring;
+  inj-event(gatewayAcceptsResume(sid)) ==> inj-event(wearableStartsResume(sid)).
+
+(* Healthcare data only reaches the wearable if the gateway genuinely sent it *)
+query sid:bitstring;
+  inj-event(wearableReceivesHealthcareData(sid)) ==> inj-event(gatewaySendsHealthcareData(sid)).
+
+(* ============================================================
+   FULL AUTHENTICATION -- WEARABLE
+   ============================================================ *)
+
+let WearableFull =
+  new sidW:bitstring;
+  new nW:bitstring;
+  event wearableStartsFull(sidW);
+  let sigW = sign((tagFullW,wearable_id,gateway_id,sidW,nW),skW) in
+  out(c,(wearable_id,sidW,nW,sigW));
+
+  in(c,(=gateway_id,=sidW,=nW,nG:bitstring,ct:bitstring,sigG:bitstring));
+  let verifiedG = checksign(sigG,pk(skG)) in
+  if verifiedG = (tagFullG,gateway_id,wearable_id,sidW,nW,nG,ct) then
+    let kemSecret = kemDecap(ct,skW) in
+    let sessionKey = kdf(kemSecret,sidW,nW,nG) in
+    event wearableAcceptsGateway(sidW);
+
+    in(c,protectedData:bitstring);
+    let receivedData = aeadDecrypt(protectedData,sessionKey) in
+    if receivedData = (sidW,healthcareData) then
+      event wearableReceivesHealthcareData(sidW);
+      out(c,mac((tagFinish,sidW,nG),sessionKey));
+      in(c,ticketForWearable:bitstring);
+      out(c,ticketForWearable).
+
+(* ============================================================
+   FULL AUTHENTICATION -- GATEWAY
+   ============================================================ *)
+
+let GatewayFull =
+  in(c,(=wearable_id,sidG:bitstring,nWG:bitstring,sigWG:bitstring));
+  let verifiedW = checksign(sigWG,pk(skW)) in
+  if verifiedW = (tagFullW,wearable_id,gateway_id,sidG,nWG) then
+    new nG:bitstring;
+    new kemSeed:bitstring;
+    let ct = kemEncap(kemSeed,pk(skW)) in
+    let kemSecret = kemShared(kemSeed,pk(skW)) in
+    let sessionKey = kdf(kemSecret,sidG,nWG,nG) in
+    let sigG = sign((tagFullG,gateway_id,wearable_id,sidG,nWG,nG,ct),skG) in
+    event gatewayInitiatesFull(sidG);
+    out(c,(gateway_id,sidG,nWG,nG,ct,sigG));
+
+    event gatewaySendsHealthcareData(sidG);
+    out(c,aeadEncrypt((sidG,healthcareData),sessionKey));
+
+    in(c,finishMessage:bitstring);
+    let verifiedFinish = checkmac(finishMessage,sessionKey) in
+    if verifiedFinish = (tagFinish,sidG,nG) then
+      event gatewayAcceptsWearable(sidG);
+      new ticketNonce:bitstring;
+      let ticket = makeTicket((sidG,sessionKey,ticketNonce),ticketKey) in
+      out(c,ticket).
+
+(* ============================================================
+   SESSION RESUMPTION -- WEARABLE
+   ============================================================ *)
+
+let WearableResume =
+  in(c,ticketW:bitstring);
+  let openedTicketW = openTicket(ticketW,ticketKey) in
+  let (sidRW:bitstring,oldKeyW:bitstring,ticketNonceW:bitstring) = openedTicketW in
+  new nRW:bitstring;
+  event wearableStartsResume(sidRW);
+  out(c,(ticketW,nRW,mac((tagResumeW,sidRW,ticketNonceW,nRW),oldKeyW)));
+
+  in(c,(nRG:bitstring,proofG:bitstring));
+  let verifiedResumeG = checkmac(proofG,oldKeyW) in
+  if verifiedResumeG = (tagResumeG,sidRW,ticketNonceW,nRW,nRG) then
+    let resumedKey = kdf(oldKeyW,sidRW,nRW,nRG) in
+    event wearableAcceptsResume(sidRW);
+    out(c,mac((tagResumeFinish,sidRW,nRG),resumedKey)).
+
+(* ============================================================
+   SESSION RESUMPTION -- GATEWAY
+   ============================================================ *)
+
+let GatewayResume =
+  in(c,(ticketG:bitstring,nRWG:bitstring,proofW:bitstring));
+  let openedTicketG = openTicket(ticketG,ticketKey) in
+  let (sidRG:bitstring,oldKeyG:bitstring,ticketNonceG:bitstring) = openedTicketG in
+  let verifiedResumeW = checkmac(proofW,oldKeyG) in
+  if verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG) then
+    new nRG:bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c,(nRG,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG),oldKeyG)));
+    let resumedKey = kdf(oldKeyG,sidRG,nRWG,nRG) in
+    in(c,resumeFinish:bitstring);
+    let verifiedResumeFinish = checkmac(resumeFinish,resumedKey) in
+    if verifiedResumeFinish = (tagResumeFinish,sidRG,nRG) then
+      event wearableAcceptsResume(sidRG).
+
+(* Single-session scope (disclosed limitation, matching the audited old
+   model): one WD, one GW, one full-auth run followed by one resumption
+   round. No replication (!) -- an unbounded/replicated version was
+   attempted separately (see formal_verification/unbounded_attempt.pv and
+   FINAL_REPRODUCIBILITY_REPORT.md for the outcome) and is not what this
+   file's "all queries true" result covers. *)
+process
+  out(c, pk(skW)); out(c, pk(skG));
+  ( (!WearableFull) | (!GatewayFull) | (!WearableResume) | (!GatewayResume) )

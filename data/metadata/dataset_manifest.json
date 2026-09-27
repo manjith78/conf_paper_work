@@ -1,0 +1,120 @@
+{
+  "dataset_name": "Wearable Device Dataset from Induced Stress and Structured Exercise Sessions",
+  "dataset_version": "1.0.0",
+  "official_source": {
+    "publisher": "PhysioNet",
+    "landing_page_url": "https://physionet.org/content/wearable-device-dataset/1.0.0/",
+    "download_url_used": "https://physionet.org/content/wearable-device-dataset/get-zip/1.0.0/",
+    "doi": "10.13026/zzf8-xv61"
+  },
+  "citation": {
+    "primary": "Hongn, A., Bosch, N., Prado, L. R., & Bonomini, M. P. (2025). Wearable Device Dataset from Induced Stress and Structured Exercise Sessions (version 1.0.0). PhysioNet. https://doi.org/10.13026/zzf8-xv61",
+    "companion": "Goldberger, A., Amaral, L., Glass, L., Hausdorff, J., Ivanov, P. C., Mark, R., ... & Stanley, H. E. (2000). PhysioBank, PhysioToolkit, and PhysioNet: Components of a new research resource for complex physiologic signals. Circulation [Online]. 101 (23), pp. e215-e220."
+  },
+  "license": {
+    "name": "Open Data Commons Attribution License v1.0 (ODC-By)",
+    "full_text_location": "data/raw/extracted/wearable-device-dataset-from-induced-stress-and-structured-exercise-sessions-1.0.0/LICENSE.txt",
+    "attribution_required": true
+  },
+  "download_record": {
+    "download_date_utc": "2026-09-23",
+    "download_method": "curl (resumable, -C -) to data/raw/dataset.zip, then Python zipfile extraction to data/raw/extracted/",
+    "downloader_script": "src/preprocessing/download_dataset.py",
+    "zip_file_path": "data/raw/dataset.zip",
+    "zip_size_bytes": 73121143,
+    "zip_size_matches_server_content_length": true,
+    "zip_sha256": "229b6cd388d0193bea1320e01bee7ca8525c168920add7d95f4969ae6d57899c",
+    "zip_integrity_test": "unzip -tq dataset.zip -> 'No errors detected in compressed data of dataset.zip.'"
+  },
+  "extraction_record": {
+    "extraction_status": "SUCCESS",
+    "extracted_root_relative_path": "data/raw/extracted/wearable-device-dataset-from-induced-stress-and-structured-exercise-sessions-1.0.0",
+    "extracted_total_size_approx": "250 MB",
+    "extracted_file_count_total": 709,
+    "extracted_file_count_covered_by_official_sha256sums": 708,
+    "note_on_708_vs_709": "SHA256SUMS.txt itself is the 709th file and does not list its own hash; all 708 files it does list were verified."
+  },
+  "integrity_verification": {
+    "method": "sha256sum -c SHA256SUMS.txt (the dataset's own official checksum manifest, shipped inside the archive by PhysioNet)",
+    "files_checked": 708,
+    "files_matched": 708,
+    "files_mismatched": 0,
+    "files_missing": 0,
+    "result": "ALL 708 FILES VERIFIED EXACTLY AGAINST THE DATASET'S OWN PUBLISHED CHECKSUMS. Zero mismatches, zero missing files.",
+    "log_file_note": "Verification log was empty on success (sha256sum -c --quiet suppresses OK lines and prints only failures); an empty log with exit code 0 confirms zero failures."
+  },
+  "dataset_structure": {
+    "top_level_files": [
+      "README.txt",
+      "LICENSE.txt",
+      "SHA256SUMS.txt",
+      "data_constraints.txt",
+      "subject-info.csv",
+      "Data_Dictionary.csv",
+      "Stress_Level_v1.csv",
+      "Stress_Level_v2.csv",
+      "Wearable_Dataset.ipynb"
+    ],
+    "data_directory": "Wearable_Dataset/{STRESS,AEROBIC,ANAEROBIC}/{subject_id}/{ACC,BVP,EDA,HR,IBI,TEMP,tags}.csv",
+    "sensor_file_format": "Empatica E4 format: row 1 = UTC start timestamp (repeated per column), row 2 = sampling rate in Hz (repeated per column, N/A for IBI.csv and tags.csv), rows 3+ = raw samples.",
+    "sampling_rates_hz_as_read_from_files": {
+      "ACC": 32.0,
+      "BVP": 64.0,
+      "EDA": 4.0,
+      "HR": 1.0,
+      "TEMP": 4.0,
+      "IBI": "irregular (inter-beat interval, no fixed header rate)",
+      "tags": "event marker timestamps, no fixed header rate"
+    }
+  },
+  "subject_roster": {
+    "source": "subject-info.csv (own 'Info' column), restricted to rows matching the strict subject-id pattern S## or f## -- the file also contains a trailing footnote/reference block in the same column, which was excluded",
+    "total_subjects": 36,
+    "protocol_v1_subjects": "S01-S18 (male, protocol V1)",
+    "protocol_v2_subjects": "f01-f18 (female except f18, protocol V2)"
+  },
+  "sessions_present_per_activity": {
+    "STRESS": {
+      "n_session_dirs": 38,
+      "note": "36 subjects, but f14 is split into f14_a/f14_b (Bluetooth disconnection), yielding 38 directories for 37 distinct subjects' worth of coverage minus S12 excluded below -- see missing_or_problematic_recordings"
+    },
+    "AEROBIC": {
+      "n_session_dirs": 32,
+      "note": "S12 and f14-f18 (5 female subjects) did not perform this activity at all, per subject-info.csv's own 'Aerobic Exercise' column ('-'); S11 is split into S11_a/S11_b"
+    },
+    "ANAEROBIC": {
+      "n_session_dirs": 32,
+      "note": "f14-f18 (5 female subjects) did not perform this activity at all, per subject-info.csv's own 'Anaerobic Exercise' column ('-'); S16 is split into S16_a/S16_b"
+    }
+  },
+  "missing_or_problematic_recordings": {
+    "source_note": "The subset below is transcribed VERBATIM from the dataset's own data_constraints.txt (cp1252-encoded, bullet char 0x95) and subject-info.csv footnotes -- nothing paraphrased or silently dropped.",
+    "not_performed_at_all_per_subject_info_csv": [
+      {"activity": "AEROBIC", "subject": "S12", "reason": "'Aerobic Exercise' column = '-' (not performed)"},
+      {"activity": "AEROBIC", "subject": "f14", "reason": "'Aerobic Exercise' column = '-' (not performed)"},
+      {"activity": "AEROBIC", "subject": "f15", "reason": "'Aerobic Exercise' column = '-' (not performed)"},
+      {"activity": "AEROBIC", "subject": "f16", "reason": "'Aerobic Exercise' column = '-' (not performed)"},
+      {"activity": "AEROBIC", "subject": "f17", "reason": "'Aerobic Exercise' column = '-' (not performed)"},
+      {"activity": "AEROBIC", "subject": "f18", "reason": "'Aerobic Exercise' column = '-' (not performed)"},
+      {"activity": "ANAEROBIC", "subject": "f14", "reason": "'Anaerobic Exercise' column = '-' (not performed)"},
+      {"activity": "ANAEROBIC", "subject": "f15", "reason": "'Anaerobic Exercise' column = '-' (not performed)"},
+      {"activity": "ANAEROBIC", "subject": "f16", "reason": "'Anaerobic Exercise' column = '-' (not performed)"},
+      {"activity": "ANAEROBIC", "subject": "f17", "reason": "'Anaerobic Exercise' column = '-' (not performed)"},
+      {"activity": "ANAEROBIC", "subject": "f18", "reason": "'Anaerobic Exercise' column = '-' (not performed)"}
+    ],
+    "documented_quality_issues_data_constraints_txt": [
+      {"activity": "STRESS", "subject": "S02", "issue": "Duplicated signals: ACC row 49545, BVP row 99091, EDA/TEMP row 6195 onward are duplicates of earlier data.", "measured_confirmation": "STRESS/S02/ACC.csv has 99086 data rows total -- consistent with duplication of roughly the back half of the file."},
+      {"activity": "STRESS", "subject": "f07", "issue": "Wristband dock never removed; only EDA and ACC are scientifically valid. BVP and TEMP files are physically present but not valid signal.", "note": "SSM pipeline only consumes ACC, so this has no downstream effect."},
+      {"activity": "STRESS", "subject": "f14", "issue": "Bluetooth connection lost mid-session; split into f14_a and f14_b.", "measured_gap_seconds": 91.3},
+      {"activity": "AEROBIC", "subject": "S03", "issue": "Protocol ended early (subject reached 90 rpm before target)."},
+      {"activity": "AEROBIC", "subject": "S07", "issue": "Protocol ended early (subject reached 95 rpm before target)."},
+      {"activity": "AEROBIC", "subject": "S11", "issue": "Bluetooth connection lost mid-session; split into S11_a and S11_b.", "measured_gap_seconds": 219.1},
+      {"activity": "ANAEROBIC", "subject": "S01", "issue": "IBI.csv file is empty."},
+      {"activity": "ANAEROBIC", "subject": "S06", "issue": "Protocol ended early; last sprint interval missing."},
+      {"activity": "ANAEROBIC", "subject": "S16", "issue": "Bluetooth connection lost mid-session; split into S16_a and S16_b.", "measured_gap_seconds": 51.4}
+    ]
+  },
+  "recordings_included_in_experiment": "TO BE FINALIZED IN experiments/experiment_01_dataset_validation output once DECISIONS_REQUIRED.md items 1-2 are confirmed; provisionally: all 36 subjects across all activities they performed, with S02/STRESS truncated at its documented duplication row (Decision 2, provisional default), and f14/S11/S16 modeled as single continuous sessions with the measured real gap inserted (Decision 1, provisional default).",
+  "recordings_excluded_and_why": "AEROBIC/S12 and AEROBIC+ANAEROBIC/f14-f18 excluded because the subject did not perform that activity at all (subject-info.csv, not a data quality problem). No subject is excluded due to unresolved data-quality issues at this stage; S02/STRESS is included in truncated form (see Decision 2) rather than excluded.",
+  "provenance_of_this_manifest": "Every field above was either read directly from a file shipped inside the official dataset (subject-info.csv, data_constraints.txt, SHA256SUMS.txt, README.txt) or measured directly from the raw sensor files by experiments/experiment_01_dataset_validation/build_inventory.py. No field was estimated or invented."
+}

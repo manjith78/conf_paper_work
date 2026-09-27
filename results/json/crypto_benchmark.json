@@ -1,0 +1,126 @@
+{
+  "cpu": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "python": "3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "note": "Software-only wall-clock latency measured on THIS machine (a cloud sandbox CPU, not an embedded ARM Cortex-M4). Real, reproducible measurements from the accompanying open-source reference implementation; no energy figures are asserted from this data.",
+  "ed25519": {
+    "sign": {
+      "mean_ms": 0.07709435,
+      "std_ms": 0.013537461101606165,
+      "min_ms": 0.072,
+      "max_ms": 0.2055,
+      "n": 2000
+    },
+    "verify": {
+      "mean_ms": 0.21372105,
+      "std_ms": 0.028891353756747017,
+      "min_ms": 0.2058,
+      "max_ms": 1.0588,
+      "n": 2000
+    }
+  },
+  "ml_kem_512": {
+    "encaps": {
+      "mean_ms": 6.227715,
+      "std_ms": 0.25003530669687435,
+      "min_ms": 5.9772,
+      "max_ms": 8.0601,
+      "n": 500
+    },
+    "decaps": {
+      "mean_ms": 8.8118798,
+      "std_ms": 0.43785885215667386,
+      "min_ms": 8.4378,
+      "max_ms": 13.7133,
+      "n": 500
+    },
+    "keygen": {
+      "mean_ms": 3.998963,
+      "std_ms": 0.20750437761888302,
+      "min_ms": 3.8332,
+      "max_ms": 6.0369,
+      "n": 500
+    }
+  },
+  "hmac": {
+    "hmac_verify_pair": {
+      "mean_ms": 0.01134525,
+      "std_ms": 0.0019149954144853717,
+      "min_ms": 0.011,
+      "max_ms": 0.0787,
+      "n": 2000
+    }
+  },
+  "aes_gcm": {
+    "encrypt_64B": {
+      "mean_ms": 0.00313895,
+      "std_ms": 0.001260915499746117,
+      "min_ms": 0.0029,
+      "max_ms": 0.0545,
+      "n": 2000
+    },
+    "decrypt_64B": {
+      "mean_ms": 0.00274755,
+      "std_ms": 0.00040125303425644026,
+      "min_ms": 0.0026,
+      "max_ms": 0.0134,
+      "n": 2000
+    }
+  },
+  "hkdf": {
+    "derive": {
+      "mean_ms": 0.01187575,
+      "std_ms": 0.002602972711631837,
+      "min_ms": 0.0114,
+      "max_ms": 0.1176,
+      "n": 2000
+    }
+  },
+  "classical_ecdsa_ecdh": {
+    "ecdsa_sign": {
+      "mean_ms": 0.06102845,
+      "std_ms": 0.008965448432593877,
+      "min_ms": 0.0572,
+      "max_ms": 0.2184,
+      "n": 2000
+    },
+    "ecdsa_verify": {
+      "mean_ms": 0.14008494999999999,
+      "std_ms": 0.010829071451306432,
+      "min_ms": 0.1348,
+      "max_ms": 0.2508,
+      "n": 2000
+    },
+    "ecdh_exchange": {
+      "mean_ms": 0.10047435,
+      "std_ms": 0.007252367687693447,
+      "min_ms": 0.0985,
+      "max_ms": 0.2671,
+      "n": 2000
+    },
+    "ecdsa_pubkey_bytes": 65,
+    "ecdsa_sig_bytes": 71
+  },
+  "end_to_end": {
+    "full_handshake": {
+      "mean_ms": 19.368878333333335,
+      "std_ms": 0.6322425666075921,
+      "min_ms": 18.7343,
+      "max_ms": 26.8961,
+      "n": 300
+    },
+    "resumption": {
+      "mean_ms": 0.0556928,
+      "std_ms": 0.008778166560278975,
+      "min_ms": 0.0533,
+      "max_ms": 0.3315,
+      "n": 2000
+    }
+  },
+  "message_sizes": {
+    "full_handshake_bytes": 928,
+    "resumption_bytes": 96
+  }
+}

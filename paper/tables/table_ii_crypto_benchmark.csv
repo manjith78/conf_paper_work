@@ -1,0 +1,15 @@
+Operation,Latency mean ± SD (ms),n
+Ed25519 Sign,0.0771 ± 0.0135,2000
+Ed25519 Verify,0.2137 ± 0.0289,2000
+ML-KEM-512 Encaps,6.2277 ± 0.2500,500
+ML-KEM-512 Decaps,8.8119 ± 0.4379,500
+ML-KEM-512 KeyGen,3.9990 ± 0.2075,500
+HMAC-SHA256 verify pair,0.0113 ± 0.0019,2000
+AES-128-GCM Encrypt (64B),0.0031 ± 0.0013,2000
+AES-128-GCM Decrypt (64B),0.0027 ± 0.0004,2000
+HKDF-SHA256 derive,0.0119 ± 0.0026,2000
+ECDSA-P256 Sign (classical),0.0610 ± 0.0090,2000
+ECDSA-P256 Verify (classical),0.1401 ± 0.0108,2000
+ECDH-P256 exchange (classical),0.1005 ± 0.0073,2000
+Full handshake (end-to-end),19.3689 ± 0.6322,300
+Resumption (end-to-end),0.0557 ± 0.0088,2000

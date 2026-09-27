@@ -1,0 +1,1125 @@
+from pathlib import Path
+import textwrap
+
+out = Path("/mnt/data/SSM_PROJECT_GUIDE_AND_COMMANDS.txt")
+
+content = r"""
+SSM_FINAL_REBUILD_2026
+PROJECT GUIDE, REPRODUCTION COMMANDS, ARCHITECTURE, FLOW, AND GITHUB UPLOAD
+================================================================================
+
+Purpose
+-------
+This file is intended to be copied into the root of the project:
+
+D:\Documents and Settings\manjith\Documents\FINAL YEAR PROJECT\SSM_FINAL_REBUILD_2026
+
+It documents how to run the project, what the project does, the experimental flow,
+the security/protocol flow, the verified results, and how to upload the complete
+folder to the GitHub repository:
+
+https://github.com/manjith78/conf_paper_work.git
+
+
+1. PROJECT OVERVIEW
+-------------------
+
+Project:
+Adaptive Session Security Manager (SSM) for wearable healthcare IoT.
+
+Paper title:
+Adaptive Session Resumption for Hybrid Post-Quantum Authentication in
+Wearable Healthcare IoT
+
+Core idea:
+The project combines a hybrid post-quantum authentication mechanism with
+adaptive session resumption.
+
+A full authentication uses:
+    Ed25519
+    +
+    ML-KEM-512
+
+After a successful full authentication, later communication can use a
+lightweight bounded resumption mechanism based on:
+    HMAC / HKDF-derived session material
+    gateway-side per-device state
+    a resumption counter
+    timeout / risk / failure conditions
+
+The purpose is to avoid performing the expensive full post-quantum
+authentication for every subsequent wearable communication event while still
+forcing a fresh full authentication when the session should no longer be
+trusted.
+
+
+2. HIGH-LEVEL SYSTEM FLOW
+-------------------------
+
+Wearable Device
+      |
+      | telemetry / authentication request
+      v
++-----------------------------+
+| Adaptive Session Manager    |
+|                             |
+| Risk / activity evaluation  |
+| timeout check               |
+| retry/failure check         |
+| resumption counter          |
++-------------+---------------+
+              |
+       +------+------+
+       |             |
+       | FULL AUTH   | RESUME
+       |             |
+       v             v
+ Ed25519 +       HMAC/HKDF
+ ML-KEM-512      bounded session
+       |             |
+       +------+------+
+              |
+              v
+       Gateway / Server
+              |
+              v
+        Authenticated
+        session state
+              |
+              v
+        Healthcare IoT
+          telemetry
+
+
+3. FULL AUTHENTICATION FLOW
+---------------------------
+
+The full authentication path is the expensive path.
+
+Conceptual sequence:
+
+Device                         Gateway
+  |                               |
+  |---- authentication request -->|
+  |                               |
+  |<--- challenge / parameters ---|
+  |                               |
+  |---- Ed25519 authentication -->|
+  |---- ML-KEM-512 exchange ----->|
+  |                               |
+  |<--- authenticated response ---|
+  |                               |
+  |==== session established ======|
+  |                               |
+
+The exact message construction and cryptographic operations are implemented
+in the source code and protocol tests. This document intentionally does not
+replace those implementation details.
+
+
+4. SESSION RESUMPTION FLOW
+--------------------------
+
+Once a full session has established the necessary state:
+
+Device                         Gateway
+  |                               |
+  |---- resume request ---------->|
+  |                               |
+  |    verify per-device state    |
+  |    verify counter / limits    |
+  |    verify bounded conditions  |
+  |                               |
+  |<---- resume response ---------|
+  |                               |
+  |==== session continues ========|
+  |                               |
+
+The implementation uses gateway-side state keyed by device_id, including
+resumption key/counter state.
+
+A cross-device state-isolation defect was identified and fixed:
+    _pending_n3
+was changed from global state to per-device state.
+
+A regression test was added:
+    test_interleaved_resumption_is_per_device
+
+This increased the protocol test suite to 7 tests.
+
+
+5. ADAPTIVE DECISION FLOW
+-------------------------
+
+For each communication event/window:
+
+                  +----------------------+
+                  | New wearable event   |
+                  +----------+-----------+
+                             |
+                             v
+                  +----------------------+
+                  | Is full auth needed? |
+                  +----------+-----------+
+                             |
+              +--------------+--------------+
+              |                             |
+             YES                            NO
+              |                             |
+              v                             v
+       +-------------+              +------------------+
+       | FULL AUTH   |              | Check resumption |
+       | Ed25519 +   |              | bounds/state     |
+       | ML-KEM-512  |              +--------+---------+
+       +------+------+                       |
+              |                    +---------+---------+
+              |                    |                   |
+              |                   | valid             | invalid
+              |                    |                   |
+              |                    v                   v
+              |             +-------------+      +-------------+
+              |             |  RESUME     |      | FULL AUTH   |
+              |             | HMAC/HKDF   |      |             |
+              |             +------+------+      +------+------+
+              |                    |                    |
+              +--------------------+--------------------+
+                                   |
+                                   v
+                         Authenticated event
+                                   |
+                                   v
+                           Update session state
+
+
+6. FROZEN EXPERIMENT CONFIGURATION
+-----------------------------------
+
+The verified paper configuration is:
+
+w1 = 0.7
+w2 = 0.3
+A_th = 0.5
+T_max = 900 seconds
+R_max = 10
+failed_resumptions = 0
+
+These values are the frozen configuration used for the reported main results.
+
+
+7. DATASET / EXPERIMENT FLOW
+----------------------------
+
+The project uses real wearable healthcare data from PhysioNet.
+
+Verified dataset inventory:
+
+    Dataset files checked: 708
+    Missing: 0
+    Mismatched: 0
+
+Dataset ZIP SHA-256:
+
+    229b6cd388d0193bea1320e01bee7ca8525c168920add7d95f4969ae6d57899c
+
+Canonical sessions:
+
+    STRESS       36
+    AEROBIC      30
+    ANAEROBIC    31
+    TOTAL        97
+
+Verified preprocessing decisions:
+
+    Split sessions:
+        STRESS/f14
+        AEROBIC/S11
+        ANAEROBIC/S16
+
+    STRESS/S02:
+        truncated because of documented signal duplication
+
+Windows:
+
+    Real windows:              10,318
+    First-of-session windows:      97
+    First-after-gap windows:       3
+
+
+8. EXPERIMENT PIPELINE
+----------------------
+
+Raw PhysioNet data
+        |
+        v
+Dataset integrity verification
+        |
+        v
+Session identification / canonicalization
+        |
+        v
+Signal preprocessing
+        |
+        v
+Feature extraction
+        |
+        v
+Feature table
+        |
+        v
+SSM adaptive decision
+        |
+        +----------------------+
+        |                      |
+        v                      v
+   FULL_AUTH                RESUME
+        |                      |
+        +----------+-----------+
+                   |
+                   v
+          Event/session logs
+                   |
+                   v
+        Aggregate activity results
+                   |
+                   v
+       compute + bandwidth analysis
+                   |
+                   v
+             paper tables
+                   |
+                   v
+                figures
+
+
+9. VERIFIED AUTOMATED TESTS
+---------------------------
+
+Verified command:
+
+    .\.venv\Scripts\python.exe -m pytest -q
+
+Verified result:
+
+    23 passed
+
+Breakdown:
+
+    Protocol tests: 7
+    SSM tests:      16
+
+Total: 23
+
+
+10. RUNNING THE PROJECT
+-----------------------
+
+Recommended first step in VS Code:
+
+    Open VS Code
+    File -> Open Folder
+    Select:
+
+    D:\Documents and Settings\manjith\Documents\FINAL YEAR PROJECT\SSM_FINAL_REBUILD_2026
+
+Open:
+
+    Terminal -> New Terminal
+
+Confirm location:
+
+    Get-Location
+
+It should show:
+
+    D:\Documents and Settings\manjith\Documents\FINAL YEAR PROJECT\SSM_FINAL_REBUILD_2026
+
+
+11. CREATE / ACTIVATE THE PYTHON ENVIRONMENT
+--------------------------------------------
+
+If the existing .venv is present:
+
+    .\.venv\Scripts\Activate.ps1
+
+Then verify:
+
+    python --version
+
+Expected verified project Python:
+
+    Python 3.14.7
+
+Verify pytest:
+
+    python -m pytest --version
+
+
+If PowerShell blocks activation, you can still run the environment's Python
+directly:
+
+    .\.venv\Scripts\python.exe --version
+
+
+12. RUN ALL AUTOMATED TESTS
+---------------------------
+
+Use:
+
+    .\.venv\Scripts\python.exe -m pytest -q
+
+Expected verified result:
+
+    23 passed
+
+
+13. RUN THE MAIN REPRODUCTION PIPELINE
+--------------------------------------
+
+The project contains:
+
+    REPRODUCE_ALL.bat
+
+Run it from PowerShell:
+
+    .\REPRODUCE_ALL.bat
+
+If Windows asks about execution, use the normal batch-file execution path.
+
+The verified pipeline generated / used artifacts including:
+
+    data/processed/feature_table.csv
+
+    results/csv/ssm_event_log.csv
+    results/csv/ssm_session_summary.csv
+    results/csv/sanity_trace_25event_S01_AEROBIC.csv
+
+    results/json/crypto_benchmark.json
+    results/json/ssm_activity_summary.json
+    results/json/sensitivity_analysis.json
+
+    paper/tables/table_ii_crypto_benchmark.csv
+    paper/tables/table_iii_ssm_results.csv
+
+    paper/figures/fig3_compute_cost.png
+    paper/figures/fig4_sensitivity_tmax.png
+    paper/figures/fig5_sensitivity_ath.png
+
+
+14. IMPORTANT: PROVERIF
+-----------------------
+
+Formal verification files are under:
+
+    formal_verification/
+
+Important files include:
+
+    protocol_model.pv
+    protocol_model_output.txt
+    unbounded_attempt.pv
+    unbounded_attempt_output.txt
+    README.md
+
+Verified formal-model status:
+
+    Single-session model:
+        8 true queries
+        4 secrecy queries
+        4 injective correspondence queries
+
+    Replicated/unbounded attempt:
+        one false injective correspondence remains unresolved
+
+Do NOT describe the unbounded attempt as a successful proof.
+
+The latest reproduction session did not execute ProVerif because the ProVerif
+executable was not available on PATH.
+
+Therefore, unless ProVerif is actually installed and run on the machine,
+do not claim that a fresh ProVerif execution was performed.
+
+The implementation/model abstraction also differs:
+
+    Formal model:
+        explicit ticket abstraction
+
+    Implementation:
+        gateway-side {k_r, count} state keyed by device_id
+
+This distinction is documented in the paper.
+
+
+15. VERIFIED CRYPTO BENCHMARK
+-----------------------------
+
+Latest verified benchmark:
+
+    Full authentication:
+        20.408940333333334 ms
+
+    Resumption:
+        0.05761305 ms
+
+    Full authentication bytes:
+        928
+
+    Resumption bytes:
+        96
+
+
+16. VERIFIED REAL-DATA SSM RESULTS
+----------------------------------
+
+STRESS
+
+    sessions:                  36
+    mean duration:             42.27 min
+    mean full events/session:  15.6944
+    mean resume events/session:110.9722
+    full events / 24h:         534.71
+    resume events / 24h:       3780.8
+    proposed compute:          11130.61 ms / 24h
+    baseline compute:          88074.88 ms / 24h
+    compute reduction:         87.36%
+    proposed bytes:            859164.0
+    baseline bytes:            4004788.3
+    bandwidth reduction:       78.55%
+
+AEROBIC
+
+    sessions:                  30
+    mean duration:             36.5 min
+    mean full events/session:  17.5
+    mean resume events/session:91.6
+    full events / 24h:         690.43
+    resume events / 24h:       3613.92
+    proposed compute:          14299.19 ms / 24h
+    baseline compute:          87847.23 ms / 24h
+    compute reduction:         83.72%
+    proposed bytes:            987657.0
+    baseline bytes:            3994437.0
+    bandwidth reduction:       75.27%
+
+ANAEROBIC
+
+    sessions:                  31
+    mean duration:             26.75 min
+    mean full events/session:  11.6129
+    mean resume events/session:68.5484
+    full events / 24h:         625.08
+    resume events / 24h:       3689.71
+    proposed compute:          12969.8 ms / 24h
+    baseline compute:          88060.31 ms / 24h
+    compute reduction:         85.27%
+    proposed bytes:            934286.8
+    baseline bytes:            4004126.0
+    bandwidth reduction:       76.67%
+
+
+17. 25-EVENT SANITY TRACE
+-------------------------
+
+Verified sanity trace:
+
+    FULL_AUTH events: 4
+    RESUME events:    21
+    Total events:     25
+    Bytes:            5728
+    Total compute:    82.846 ms
+
+Full-authentication events occurred at:
+
+    1
+    12
+    22
+    25
+
+
+18. SENSITIVITY ANALYSIS
+------------------------
+
+AEROBIC, 30 sessions.
+
+T_max sensitivity:
+
+    1 min   -> 69.4%
+    3 min   -> 82.87%
+    5 min   -> 83.72%
+    10 min  -> 83.72%
+    15 min  -> 83.72%
+    30 min  -> 83.72%
+    60 min  -> 83.72%
+
+A_th sensitivity:
+
+    0.1 -> 26.84%
+    0.2 -> 52.71%
+    0.3 -> 69.56%
+    0.4 -> 78.24%
+    0.5 -> 83.72%
+    0.6 -> 86.28%
+    0.7 -> 87.90%
+    0.8 -> 90.15%
+    0.9 -> 90.15%
+    1.0 -> 90.15%
+
+R_max sensitivity:
+
+    2  -> 62.00%
+    5  -> 77.17%
+    10 -> 83.72%
+    15 -> 85.79%
+    20 -> 87.17%
+    30 -> 87.96%
+
+
+19. GITHUB UPLOAD — IMPORTANT
+-----------------------------
+
+Target repository:
+
+    https://github.com/manjith78/conf_paper_work.git
+
+You said you want the WHOLE project folder uploaded.
+
+The commands below operate directly on:
+
+    D:\Documents and Settings\manjith\Documents\FINAL YEAR PROJECT\SSM_FINAL_REBUILD_2026
+
+Do NOT run git commands from the parent directory if you only want this
+project uploaded.
+
+
+20. BEFORE UPLOADING — CHECK LARGE FILES
+----------------------------------------
+
+GitHub blocks individual files larger than 100 MB.
+
+Run this PowerShell command from the project root:
+
+    Get-ChildItem -Recurse -File |
+      Sort-Object Length -Descending |
+      Select-Object -First 20 FullName,@{Name="MB";Expression={[math]::Round($_.Length/1MB,2)}}
+
+Look carefully for files over approximately 100 MB.
+
+Also check total repository size:
+
+    (Get-ChildItem -Recurse -File | Measure-Object Length -Sum).Sum / 1GB
+
+If the raw dataset is present, check its size before attempting the upload.
+
+IMPORTANT:
+A Git repository can technically contain the raw data, but redistribution
+may be restricted by the dataset's terms. The safer research-release practice
+is usually to keep the code, metadata, scripts, processed permitted artifacts,
+and instructions in GitHub while requiring users to download the original
+dataset themselves.
+
+Because you specifically requested the whole folder, the final decision about
+whether to commit the raw dataset should be based on its redistribution terms.
+
+
+21. CHECK WHETHER GIT IS INSTALLED
+----------------------------------
+
+Run:
+
+    git --version
+
+Expected: a Git version number.
+
+If Git is not installed, install Git for Windows, restart VS Code, then retry.
+
+
+22. INITIALIZE THE REPOSITORY
+-----------------------------
+
+From:
+
+    D:\Documents and Settings\manjith\Documents\FINAL YEAR PROJECT\SSM_FINAL_REBUILD_2026
+
+run:
+
+    git init
+
+Set the branch name:
+
+    git branch -M main
+
+
+23. CONFIGURE YOUR GIT IDENTITY
+-------------------------------
+
+If this computer is already configured, check:
+
+    git config --global user.name
+    git config --global user.email
+
+If blank, set your GitHub identity, for example:
+
+    git config --global user.name "manjith78"
+    git config --global user.email "YOUR_GITHUB_EMAIL@example.com"
+
+Use the email address you want associated with your Git commits.
+
+
+24. CONNECT TO THE GITHUB REPOSITORY
+------------------------------------
+
+Add the remote:
+
+    git remote add origin https://github.com/manjith78/conf_paper_work.git
+
+Check it:
+
+    git remote -v
+
+If origin already exists, use:
+
+    git remote set-url origin https://github.com/manjith78/conf_paper_work.git
+
+Then check:
+
+    git remote -v
+
+
+25. IMPORTANT: CHECK WHETHER THE GITHUB REPO ALREADY HAS FILES
+--------------------------------------------------------------
+
+Before pushing, run:
+
+    git fetch origin
+
+Then:
+
+    git branch -r
+
+If the GitHub repository is EMPTY, you can proceed normally.
+
+If the GitHub repository already contains a README or other commits, do NOT
+blindly overwrite it. Inspect first:
+
+    git log --oneline --all --decorate -10
+
+If it contains important existing work, merge/reconcile it rather than
+destroying it.
+
+
+26. REVIEW WHAT WILL BE UPLOADED
+--------------------------------
+
+Run:
+
+    git status
+
+Then:
+
+    git add .
+
+Before committing, inspect the staged files:
+
+    git status
+
+To see the staged file list:
+
+    git diff --cached --name-status
+
+To see staged file sizes:
+
+    git diff --cached --stat
+
+
+27. IF YOU DISCOVER FILES THAT SHOULD NOT BE UPLOADED
+-----------------------------------------------------
+
+Unstage everything:
+
+    git reset
+
+Then edit .gitignore or remove the unwanted files.
+
+For example, do NOT commit:
+
+    .venv/
+    __pycache__/
+    .pytest_cache/
+    .env
+    private keys
+    credentials
+    temporary render directories
+    huge local archives
+    restricted raw datasets
+
+Then:
+
+    git add .
+
+
+28. COMMIT THE PROJECT
+----------------------
+
+Once the staged files are correct:
+
+    git commit -m "Initial reproducible research release"
+
+Check:
+
+    git status
+
+Expected:
+
+    nothing to commit, working tree clean
+
+
+29. PUSH TO GITHUB
+------------------
+
+If the remote repository is empty:
+
+    git push -u origin main
+
+GitHub may ask you to authenticate.
+
+For HTTPS authentication, use the GitHub authentication mechanism presented
+by Git Credential Manager/browser. Do not put a GitHub password or personal
+access token directly into a command or into this documentation file.
+
+
+30. VERIFY THE REMOTE
+---------------------
+
+After the push:
+
+    git remote -v
+
+Then open:
+
+    https://github.com/manjith78/conf_paper_work
+
+Check that the project files are visible.
+
+
+31. CREATE THE FIRST RELEASE TAG
+--------------------------------
+
+After you have verified the repository:
+
+    git tag -a v1.0.0 -m "Reproducible research release v1.0.0"
+
+Push the tag:
+
+    git push origin v1.0.0
+
+Then create a GitHub Release from the tag and use:
+
+    v1.0.0 — Reproducible research release
+
+Recommended release description:
+
+    First reproducible research release for the Adaptive Session Security
+    Manager (SSM) study.
+
+    Verified snapshot:
+    - 23 automated tests passing
+    - 97 canonical wearable sessions
+    - 10,318 real windows
+    - 708/708 dataset files verified
+    - Full authentication: 20.408940333333334 ms
+    - Resumption: 0.05761305 ms
+
+    The release preserves the documented formal-verification limitation:
+    the single-session ProVerif model has 8 true queries, while the
+    replicated/unbounded attempt retains one unresolved false injective
+    correspondence.
+
+
+32. FUTURE UPDATES
+------------------
+
+After modifying files:
+
+    git status
+    git add .
+    git commit -m "Describe the change"
+    git push
+
+For a new release:
+
+    git tag -a v1.0.1 -m "v1.0.1"
+    git push origin v1.0.1
+
+
+33. RECOMMENDED GITHUB REPOSITORY STRUCTURE
+-------------------------------------------
+
+SSM_FINAL_REBUILD_2026/
+|
++-- README.md
++-- LICENSE
++-- CITATION.cff
++-- CONTRIBUTING.md
++-- SECURITY.md
++-- .gitignore
++-- REPRODUCE_ALL.bat
++-- run_all.py
++-- download_dataset.py
++-- requirements.txt
+|
++-- src/
+|   +-- implementation files
+|
++-- tests/
+|   +-- protocol tests
+|   +-- SSM tests
+|
++-- formal_verification/
+|   +-- protocol_model.pv
+|   +-- protocol_model_output.txt
+|   +-- unbounded_attempt.pv
+|   +-- unbounded_attempt_output.txt
+|   +-- README.md
+|
++-- data/
+|   +-- README.md
+|   +-- processed/
+|
++-- results/
+|   +-- csv/
+|   +-- json/
+|
++-- paper/
+|   +-- final paper
+|   +-- tables/
+|   +-- figures/
+|
++-- docs/
+|   +-- reproducibility documentation
+|   +-- release notes
+
+
+34. WHAT THE PROJECT DEMONSTRATES
+---------------------------------
+
+The research evaluates whether adaptive session resumption can reduce the
+computational and communication cost of repeatedly performing hybrid
+post-quantum authentication in a wearable healthcare IoT setting.
+
+The project compares:
+
+    Baseline:
+        always perform full authentication
+
+versus:
+
+    Proposed:
+        perform full authentication when required and use bounded session
+        resumption for eligible subsequent events.
+
+The evaluation is performed against real wearable healthcare sessions rather
+than only synthetic traces.
+
+The main reported reductions are:
+
+    STRESS:
+        compute     87.36%
+        bandwidth   78.55%
+
+    AEROBIC:
+        compute     83.72%
+        bandwidth   75.27%
+
+    ANAEROBIC:
+        compute     85.27%
+        bandwidth   76.67%
+
+
+35. SECURITY CLAIMS — HOW TO DESCRIBE THEM
+------------------------------------------
+
+Use careful language in reports/presentations.
+
+Supported:
+
+    The single-session ProVerif model verified eight stated queries.
+
+Also supported:
+
+    The project contains an unbounded/replicated model attempt with one
+    unresolved false injective correspondence.
+
+Do NOT write:
+
+    "ProVerif proved the entire protocol secure."
+
+Do NOT write:
+
+    "The unbounded model proved security."
+
+Do NOT hide the unresolved result.
+
+The unresolved result is part of the reproducibility record.
+
+
+36. IMPORTANT IMPLEMENTATION DETAIL
+-----------------------------------
+
+The implementation uses gateway-side state:
+
+    {k_r, count}
+
+keyed by:
+
+    device_id
+
+The formal model uses an explicit ticket abstraction.
+
+These are related abstractions but are not identical implementation details.
+
+
+37. PAPER / REPOSITORY SYNCHRONIZATION
+--------------------------------------
+
+Once the GitHub repository is live, the paper's code/data availability
+statement should contain the actual GitHub repository URL.
+
+Repository:
+
+    https://github.com/manjith78/conf_paper_work
+
+Do not put a placeholder URL in the final submitted paper.
+
+If the repository is later archived through Zenodo or another DOI service,
+the paper can additionally cite the permanent archival DOI.
+
+
+38. FINAL PRE-SUBMISSION CHECKLIST
+----------------------------------
+
+[ ] Project folder opens in VS Code
+[ ] Python environment works
+[ ] pytest works
+[ ] 23 tests pass
+[ ] REPRODUCE_ALL.bat works
+[ ] Results regenerated
+[ ] Paper values match generated results
+[ ] Formal verification limitation is disclosed
+[ ] No passwords/tokens/private keys
+[ ] No accidental .venv upload
+[ ] No __pycache__ upload
+[ ] No temporary render files
+[ ] Large files checked
+[ ] Dataset redistribution terms checked
+[ ] README is current
+[ ] Git remote points to conf_paper_work.git
+[ ] git status reviewed before commit
+[ ] Initial commit created
+[ ] main pushed
+[ ] GitHub repository checked in browser
+[ ] v1.0.0 tag created
+[ ] GitHub Release created
+[ ] Final paper contains repository URL
+
+
+39. QUICK COMMAND BLOCK — COPY/PASTE VERSION
+--------------------------------------------
+
+Run these one at a time from the project root.
+
+    cd "D:\Documents and Settings\manjith\Documents\FINAL YEAR PROJECT\SSM_FINAL_REBUILD_2026"
+
+    Get-Location
+
+    git --version
+
+    .\.venv\Scripts\python.exe -m pytest -q
+
+    .\REPRODUCE_ALL.bat
+
+    git init
+
+    git branch -M main
+
+    git remote -v
+
+If no origin exists:
+
+    git remote add origin https://github.com/manjith78/conf_paper_work.git
+
+If origin already exists:
+
+    git remote set-url origin https://github.com/manjith78/conf_paper_work.git
+
+Then:
+
+    git remote -v
+
+    git status
+
+    git add .
+
+    git status
+
+    git diff --cached --stat
+
+    git commit -m "Initial reproducible research release"
+
+    git push -u origin main
+
+After verifying GitHub:
+
+    git tag -a v1.0.0 -m "Reproducible research release v1.0.0"
+
+    git push origin v1.0.0
+
+
+40. IF PUSH FAILS BECAUSE OF A FILE >100 MB
+--------------------------------------------
+
+Do NOT immediately use Git LFS blindly.
+
+First identify the file:
+
+    Get-ChildItem -Recurse -File |
+      Sort-Object Length -Descending |
+      Select-Object -First 30 FullName,@{Name="MB";Expression={[math]::Round($_.Length/1MB,2)}}
+
+Then decide whether the file belongs in GitHub at all.
+
+For raw datasets or large generated archives, the preferred research approach is
+usually to document how to obtain them rather than commit them, unless their
+license and project requirements explicitly permit redistribution.
+
+For large source/binary artifacts that genuinely must be versioned, Git LFS
+can be considered separately.
+
+
+41. FINAL NOTE
+--------------
+
+The most important rule for this project is reproducibility.
+
+The GitHub repository should contain the exact implementation, tests,
+configuration, formal models, scripts, documentation, and permitted result
+artifacts used to support the paper.
+
+Do not replace missing source files with approximate rewrites and do not claim
+a fresh verification run unless it was actually performed.
+
+END OF GUIDE
+================================================================================
+"""
+
+out.write_text(content, encoding="utf-8")
+print(out)
+print(f"{out.stat().st_size:,} bytes")
+
+
+
+
+
+
+
+run fully :
+.\.venv\Scripts\python.exe -m pytest -q
+.\REPRODUCE_ALL.bat

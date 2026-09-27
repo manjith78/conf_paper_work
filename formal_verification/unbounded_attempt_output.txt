@@ -1,0 +1,1101 @@
+Process 0 (that is, the initial process):
+{1}out(c, pk(skW));
+{2}out(c, pk(skG));
+(
+    {3}!
+    {4}new sidW: bitstring;
+    {5}new nW: bitstring;
+    {6}event wearableStartsFull(sidW);
+    {7}let sigW: bitstring = sign((tagFullW,wearable_id,gateway_id,sidW,nW),skW) in
+    {8}out(c, (wearable_id,sidW,nW,sigW));
+    {9}in(c, (=gateway_id,=sidW,=nW,nG: bitstring,ct: bitstring,sigG: bitstring));
+    {10}let verifiedG: bitstring = checksign(sigG,pk(skG)) in
+    {11}if (verifiedG = (tagFullG,gateway_id,wearable_id,sidW,nW,nG,ct)) then
+    {12}let kemSecret: bitstring = kemDecap(ct,skW) in
+    {13}let sessionKey: bitstring = kdf(kemSecret,sidW,nW,nG) in
+    {14}event wearableAcceptsGateway(sidW);
+    {15}in(c, protectedData: bitstring);
+    {16}let receivedData: bitstring = aeadDecrypt(protectedData,sessionKey) in
+    {17}if (receivedData = (sidW,healthcareData)) then
+    {18}event wearableReceivesHealthcareData(sidW);
+    {19}out(c, mac((tagFinish,sidW,nG),sessionKey));
+    {20}in(c, ticketForWearable: bitstring);
+    {21}out(c, ticketForWearable)
+) | (
+    {22}!
+    {23}in(c, (=wearable_id,sidG: bitstring,nWG: bitstring,sigWG: bitstring));
+    {24}let verifiedW: bitstring = checksign(sigWG,pk(skW)) in
+    {25}if (verifiedW = (tagFullW,wearable_id,gateway_id,sidG,nWG)) then
+    {26}new nG_1: bitstring;
+    {27}new kemSeed: bitstring;
+    {28}let ct_1: bitstring = kemEncap(kemSeed,pk(skW)) in
+    {29}let kemSecret_1: bitstring = kemShared(kemSeed,pk(skW)) in
+    {30}let sessionKey_1: bitstring = kdf(kemSecret_1,sidG,nWG,nG_1) in
+    {31}let sigG_1: bitstring = sign((tagFullG,gateway_id,wearable_id,sidG,nWG,nG_1,ct_1),skG) in
+    {32}event gatewayInitiatesFull(sidG);
+    {33}out(c, (gateway_id,sidG,nWG,nG_1,ct_1,sigG_1));
+    {34}event gatewaySendsHealthcareData(sidG);
+    {35}out(c, aeadEncrypt((sidG,healthcareData),sessionKey_1));
+    {36}in(c, finishMessage: bitstring);
+    {37}let verifiedFinish: bitstring = checkmac(finishMessage,sessionKey_1) in
+    {38}if (verifiedFinish = (tagFinish,sidG,nG_1)) then
+    {39}event gatewayAcceptsWearable(sidG);
+    {40}new ticketNonce: bitstring;
+    {41}let ticket: bitstring = makeTicket((sidG,sessionKey_1,ticketNonce),ticketKey) in
+    {42}out(c, ticket)
+) | (
+    {43}!
+    {44}in(c, ticketW: bitstring);
+    {45}let openedTicketW: bitstring = openTicket(ticketW,ticketKey) in
+    {46}let (sidRW: bitstring,oldKeyW: bitstring,ticketNonceW: bitstring) = openedTicketW in
+    {47}new nRW: bitstring;
+    {48}event wearableStartsResume(sidRW);
+    {49}out(c, (ticketW,nRW,mac((tagResumeW,sidRW,ticketNonceW,nRW),oldKeyW)));
+    {50}in(c, (nRG: bitstring,proofG: bitstring));
+    {51}let verifiedResumeG: bitstring = checkmac(proofG,oldKeyW) in
+    {52}if (verifiedResumeG = (tagResumeG,sidRW,ticketNonceW,nRW,nRG)) then
+    {53}let resumedKey: bitstring = kdf(oldKeyW,sidRW,nRW,nRG) in
+    {54}event wearableAcceptsResume(sidRW);
+    {55}out(c, mac((tagResumeFinish,sidRW,nRG),resumedKey))
+) | (
+    {56}!
+    {57}in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    {58}let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    {59}let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    {60}let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    {61}if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    {62}new nRG_1: bitstring;
+    {63}event gatewayAcceptsResume(sidRG);
+    {64}out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    {65}let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    {66}in(c, resumeFinish: bitstring);
+    {67}let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    {68}if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    {69}event wearableAcceptsResume(sidRG)
+)
+
+File "unbounded_attempt.pv", line 92, characters 7-9:
+Warning: identifier sid rebound.
+File "unbounded_attempt.pv", line 99, characters 7-9:
+Warning: identifier sid rebound.
+File "unbounded_attempt.pv", line 103, characters 7-9:
+Warning: identifier sid rebound.
+File "unbounded_attempt.pv", line 107, characters 7-9:
+Warning: identifier sid rebound.
+--  Process 1 (that is, process 0, with let moved downwards):
+{1}out(c, pk(skW));
+{2}out(c, pk(skG));
+(
+    {3}!
+    {4}new sidW: bitstring;
+    {5}new nW: bitstring;
+    {6}event wearableStartsFull(sidW);
+    {7}let sigW: bitstring = sign((tagFullW,wearable_id,gateway_id,sidW,nW),skW) in
+    {8}out(c, (wearable_id,sidW,nW,sigW));
+    {9}in(c, (=gateway_id,=sidW,=nW,nG: bitstring,ct: bitstring,sigG: bitstring));
+    {10}let verifiedG: bitstring = checksign(sigG,pk(skG)) in
+    {11}if (verifiedG = (tagFullG,gateway_id,wearable_id,sidW,nW,nG,ct)) then
+    {12}let kemSecret: bitstring = kemDecap(ct,skW) in
+    {14}event wearableAcceptsGateway(sidW);
+    {15}in(c, protectedData: bitstring);
+    {13}let sessionKey: bitstring = kdf(kemSecret,sidW,nW,nG) in
+    {16}let receivedData: bitstring = aeadDecrypt(protectedData,sessionKey) in
+    {17}if (receivedData = (sidW,healthcareData)) then
+    {18}event wearableReceivesHealthcareData(sidW);
+    {19}out(c, mac((tagFinish,sidW,nG),sessionKey));
+    {20}in(c, ticketForWearable: bitstring);
+    {21}out(c, ticketForWearable)
+) | (
+    {22}!
+    {23}in(c, (=wearable_id,sidG: bitstring,nWG: bitstring,sigWG: bitstring));
+    {24}let verifiedW: bitstring = checksign(sigWG,pk(skW)) in
+    {25}if (verifiedW = (tagFullW,wearable_id,gateway_id,sidG,nWG)) then
+    {26}new nG_1: bitstring;
+    {27}new kemSeed: bitstring;
+    {32}event gatewayInitiatesFull(sidG);
+    {28}let ct_1: bitstring = kemEncap(kemSeed,pk(skW)) in
+    {31}let sigG_1: bitstring = sign((tagFullG,gateway_id,wearable_id,sidG,nWG,nG_1,ct_1),skG) in
+    {33}out(c, (gateway_id,sidG,nWG,nG_1,ct_1,sigG_1));
+    {34}event gatewaySendsHealthcareData(sidG);
+    {29}let kemSecret_1: bitstring = kemShared(kemSeed,pk(skW)) in
+    {30}let sessionKey_1: bitstring = kdf(kemSecret_1,sidG,nWG,nG_1) in
+    {35}out(c, aeadEncrypt((sidG,healthcareData),sessionKey_1));
+    {36}in(c, finishMessage: bitstring);
+    {37}let verifiedFinish: bitstring = checkmac(finishMessage,sessionKey_1) in
+    {38}if (verifiedFinish = (tagFinish,sidG,nG_1)) then
+    {39}event gatewayAcceptsWearable(sidG);
+    {40}new ticketNonce: bitstring;
+    {41}let ticket: bitstring = makeTicket((sidG,sessionKey_1,ticketNonce),ticketKey) in
+    {42}out(c, ticket)
+) | (
+    {43}!
+    {44}in(c, ticketW: bitstring);
+    {45}let openedTicketW: bitstring = openTicket(ticketW,ticketKey) in
+    {46}let (sidRW: bitstring,oldKeyW: bitstring,ticketNonceW: bitstring) = openedTicketW in
+    {47}new nRW: bitstring;
+    {48}event wearableStartsResume(sidRW);
+    {49}out(c, (ticketW,nRW,mac((tagResumeW,sidRW,ticketNonceW,nRW),oldKeyW)));
+    {50}in(c, (nRG: bitstring,proofG: bitstring));
+    {51}let verifiedResumeG: bitstring = checkmac(proofG,oldKeyW) in
+    {52}if (verifiedResumeG = (tagResumeG,sidRW,ticketNonceW,nRW,nRG)) then
+    {54}event wearableAcceptsResume(sidRW);
+    {53}let resumedKey: bitstring = kdf(oldKeyW,sidRW,nRW,nRG) in
+    {55}out(c, mac((tagResumeFinish,sidRW,nRG),resumedKey))
+) | (
+    {56}!
+    {57}in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    {58}let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    {59}let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    {60}let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    {61}if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    {62}new nRG_1: bitstring;
+    {63}event gatewayAcceptsResume(sidRG);
+    {64}out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    {66}in(c, resumeFinish: bitstring);
+    {65}let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    {67}let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    {68}if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    {69}event wearableAcceptsResume(sidRG)
+)
+
+-- Query not attacker(skW[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(skW[])
+RESULT not attacker(skW[]) is true.
+-- Query not attacker(skG[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(skG[])
+RESULT not attacker(skG[]) is true.
+-- Query not attacker(ticketKey[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(ticketKey[])
+RESULT not attacker(ticketKey[]) is true.
+-- Query not attacker(healthcareData[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(healthcareData[])
+RESULT not attacker(healthcareData[]) is true.
+-- Query inj-event(wearableAcceptsGateway(sid_1)) ==> inj-event(gatewayInitiatesFull(sid_1)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query inj-event(wearableAcceptsGateway(sid_1)) ==> inj-event(gatewayInitiatesFull(sid_1))
+goal reachable: b-inj-event(gatewayInitiatesFull(sidW_1),@occ32_1) && b-event(@p_act(@occ23_5,(wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])))) && b-event(@p_act(@occ9_5,(gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])))) -> inj-event(wearableAcceptsGateway(sidW_1),@occ14_1)
+The 1st, 2nd, 3rd hypotheses occur strictly before the conclusion.
+Abbreviations:
+sidW_1 = sidW[!1 = @sid]
+nW_1 = nW[!1 = @sid]
+nG_2 = nG_1[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+kemSeed_1 = kemSeed[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+@occ14_1 = @occ14[sigG = sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[]),ct = kemEncap(kemSeed_1,pk(skW[])),nG = nG_2,!1 = @sid]
+@occ32_1 = @occ32[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+@occ23_5 = @occ23_4[!1 = @sid_1]
+@occ9_5 = @occ9_4[!1 = @sid]
+RESULT inj-event(wearableAcceptsGateway(sid_1)) ==> inj-event(gatewayInitiatesFull(sid_1)) is true.
+-- Query inj-event(gatewayAcceptsWearable(sid_1)) ==> inj-event(wearableAcceptsGateway(sid_1)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query inj-event(gatewayAcceptsWearable(sid_1)) ==> inj-event(wearableAcceptsGateway(sid_1))
+goal reachable: b-event(@p_act(@occ15_6,aeadEncrypt((sidW_1,healthcareData[]),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)))) && b-inj-event(wearableAcceptsGateway(sidW_1),@occ14_2) && b-event(@p_act(@occ9_6,(gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])))) && b-event(@p_act(@occ36_6,mac((tagFinish[],sidW_1,nG_2),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)))) && b-event(@p_act(@occ23_6,(wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])))) -> inj-event(gatewayAcceptsWearable(sidW_1),@occ39_1)
+The 1st, 2nd, 3rd, 4th, 5th hypotheses occur strictly before the conclusion.
+Abbreviations:
+sidW_1 = sidW[!1 = @sid]
+nW_1 = nW[!1 = @sid]
+nG_2 = nG_1[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+kemSeed_1 = kemSeed[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+@occ39_1 = @occ39[finishMessage = mac((tagFinish[],sidW_1,nG_2),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)),sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+@occ15_6 = @occ15_5[!1 = @sid]
+@occ14_2 = @occ14_1[sigG = sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[]),ct = kemEncap(kemSeed_1,pk(skW[])),nG = nG_2,!1 = @sid]
+@occ9_6 = @occ9_5[!1 = @sid]
+@occ36_6 = @occ36_5[!1 = @sid_1]
+@occ23_6 = @occ23_5[!1 = @sid_1]
+RESULT inj-event(gatewayAcceptsWearable(sid_1)) ==> inj-event(wearableAcceptsGateway(sid_1)) is true.
+-- Query inj-event(gatewayAcceptsResume(sid_1)) ==> inj-event(wearableStartsResume(sid_1)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query inj-event(gatewayAcceptsResume(sid_1)) ==> inj-event(wearableStartsResume(sid_1))
+goal reachable: @sid ≠ @sid_1 && b-event(@p_act(@occ57_7,(makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))))) && b-inj-event(wearableStartsResume(sidW_1),@occ48_1) && b-event(@p_act(@occ15_7,aeadEncrypt((sidW_1,healthcareData[]),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)))) && b-event(@p_act(@occ9_7,(gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])))) && b-event(@p_act(@occ36_7,mac((tagFinish[],sidW_1,nG_2),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)))) && b-event(@p_act(@occ23_7,(wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])))) && b-event(@p_act(@occ44_7,makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]))) && b-event(@p_act(@occ57_8,(makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))))) -> inj-event(gatewayAcceptsResume(sidW_1),@occ63_1) && inj-event(gatewayAcceptsResume(sidW_1),@occ63_2)
+Abbreviations:
+sidW_1 = sidW[!1 = @sid_2]
+nW_1 = nW[!1 = @sid_2]
+nG_2 = nG_1[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_3]
+kemSeed_1 = kemSeed[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_3]
+ticketNonce_1 = ticketNonce[finishMessage = mac((tagFinish[],sidW_1,nG_2),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)),sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_3]
+nRW_1 = nRW[ticketW = makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),!1 = @sid_4]
+@occ63_1 = @occ63[proofW = mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)),nRWG = nRW_1,ticketG = makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),!1 = @sid]
+@occ63_2 = @occ63[proofW = mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)),nRWG = nRW_1,ticketG = makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),!1 = @sid_1]
+@occ57_7 = @occ57_6[!1 = @sid]
+@occ48_1 = @occ48[ticketW = makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),!1 = @sid_4]
+@occ15_7 = @occ15_6[!1 = @sid_2]
+@occ9_7 = @occ9_6[!1 = @sid_2]
+@occ36_7 = @occ36_6[!1 = @sid_3]
+@occ23_7 = @occ23_6[!1 = @sid_3]
+@occ44_7 = @occ44_6[!1 = @sid_4]
+@occ57_8 = @occ57_6[!1 = @sid_1]
+
+Derivation:
+Abbreviations:
+sidW_1 = sidW[!1 = @sid]
+nW_1 = nW[!1 = @sid]
+nG_2 = nG_1[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+kemSeed_1 = kemSeed[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+ticketNonce_1 = ticketNonce[finishMessage = mac((tagFinish[],sidW_1,nG_2),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)),sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+nRW_1 = nRW[ticketW = makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),!1 = @sid_2]
+@occ63_1 = @occ63[proofW = mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)),nRWG = nRW_1,ticketG = makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),!1 = @sid_3]
+@occ63_2 = @occ63[proofW = mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)),nRWG = nRW_1,ticketG = makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),!1 = @sid_4]
+@occ57_7 = @occ57_6[!1 = @sid_3]
+@occ48_1 = @occ48[ticketW = makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),!1 = @sid_2]
+@occ23_7 = @occ23_6[!1 = @sid_1]
+@occ15_7 = @occ15_6[!1 = @sid]
+@occ9_7 = @occ9_6[!1 = @sid]
+@occ36_7 = @occ36_6[!1 = @sid_1]
+@occ44_7 = @occ44_6[!1 = @sid_2]
+@occ57_8 = @occ57_6[!1 = @sid_4]
+
+1. The message (wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])) may be sent to the attacker at output {8}.
+attacker((wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]))).
+
+2. By 1, the attacker may know (wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])).
+Using the function 4-proj-4-tuple the attacker may obtain sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]).
+attacker(sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])).
+
+3. By 1, the attacker may know (wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])).
+Using the function 3-proj-4-tuple the attacker may obtain nW_1.
+attacker(nW_1).
+
+4. By 1, the attacker may know (wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])).
+Using the function 2-proj-4-tuple the attacker may obtain sidW_1.
+attacker(sidW_1).
+
+5. The attacker initially knows wearable_id[].
+attacker(wearable_id[]).
+
+6. By 5, the attacker may know wearable_id[].
+By 4, the attacker may know sidW_1.
+By 3, the attacker may know nW_1.
+By 2, the attacker may know sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]).
+Using the function 4-tuple the attacker may obtain (wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])).
+attacker((wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]))).
+
+7. The event @p_act(@occ23_7,(wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]))) records how variables are instantiated at {23}.
+The message (wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])) that the attacker may have by 6 may be received at input {23}.
+So the message (gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])) may be sent to the attacker at output {33}.
+attacker((gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[]))).
+
+8. By 7, the attacker may know (gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])).
+Using the function 6-proj-6-tuple the attacker may obtain sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[]).
+attacker(sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])).
+
+9. By 7, the attacker may know (gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])).
+Using the function 5-proj-6-tuple the attacker may obtain kemEncap(kemSeed_1,pk(skW[])).
+attacker(kemEncap(kemSeed_1,pk(skW[]))).
+
+10. By 7, the attacker may know (gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])).
+Using the function 4-proj-6-tuple the attacker may obtain nG_2.
+attacker(nG_2).
+
+11. The attacker initially knows gateway_id[].
+attacker(gateway_id[]).
+
+12. By 11, the attacker may know gateway_id[].
+By 4, the attacker may know sidW_1.
+By 3, the attacker may know nW_1.
+By 10, the attacker may know nG_2.
+By 9, the attacker may know kemEncap(kemSeed_1,pk(skW[])).
+By 8, the attacker may know sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[]).
+Using the function 6-tuple the attacker may obtain (gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])).
+attacker((gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[]))).
+
+13. The event @p_act(@occ23_7,(wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]))) records how variables are instantiated at {23}.
+The message (wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])) that the attacker may have by 6 may be received at input {23}.
+So the message aeadEncrypt((sidW_1,healthcareData[]),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)) may be sent to the attacker at output {35}.
+attacker(aeadEncrypt((sidW_1,healthcareData[]),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))).
+
+14. The event @p_act(@occ9_7,(gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[]))) records how variables are instantiated at {9}.
+The message (gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])) that the attacker may have by 12 may be received at input {9}.
+The event @p_act(@occ15_7,aeadEncrypt((sidW_1,healthcareData[]),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))) records how variables are instantiated at {15}.
+The message aeadEncrypt((sidW_1,healthcareData[]),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)) that the attacker may have by 13 may be received at input {15}.
+So the message mac((tagFinish[],sidW_1,nG_2),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)) may be sent to the attacker at output {19}.
+attacker(mac((tagFinish[],sidW_1,nG_2),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))).
+
+15. The event @p_act(@occ23_7,(wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]))) records how variables are instantiated at {23}.
+The message (wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])) that the attacker may have by 6 may be received at input {23}.
+The event @p_act(@occ36_7,mac((tagFinish[],sidW_1,nG_2),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))) records how variables are instantiated at {36}.
+The message mac((tagFinish[],sidW_1,nG_2),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)) that the attacker may have by 14 may be received at input {36}.
+So the message makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]) may be sent to the attacker at output {42}.
+attacker(makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[])).
+
+16. The event @p_act(@occ44_7,makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[])) records how variables are instantiated at {44}.
+The message makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]) that the attacker may have by 15 may be received at input {44}.
+The event wearableStartsResume(sidW_1) (with occurrence name @occ48_1) may be executed at {48}.
+So the message (makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))) may be sent to the attacker at output {49}.
+attacker((makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)))).
+
+17. By 16, the attacker may know (makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))).
+Using the function 3-proj-3-tuple the attacker may obtain mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)).
+attacker(mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))).
+
+18. By 16, the attacker may know (makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))).
+Using the function 2-proj-3-tuple the attacker may obtain nRW_1.
+attacker(nRW_1).
+
+19. By 15, the attacker may know makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]).
+By 18, the attacker may know nRW_1.
+By 17, the attacker may know mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)).
+Using the function 3-tuple the attacker may obtain (makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))).
+attacker((makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)))).
+
+20. The event @p_act(@occ57_8,(makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)))) records how variables are instantiated at {57}.
+The message (makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))) that the attacker may have by 19 may be received at input {57}.
+So event gatewayAcceptsResume(sidW_1) may be executed at {63} in session @sid_4.
+inj-event(gatewayAcceptsResume(sidW_1),@occ63_2).
+
+21. By 20, inj-event(gatewayAcceptsResume(sidW_1),@occ63_2).
+The goal is reached, represented in the following fact:
+inj-event(gatewayAcceptsResume(sidW_1),@occ63_2).
+
+22. The event @p_act(@occ57_7,(makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)))) records how variables are instantiated at {57}.
+The message (makeTicket((sidW_1,kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2),ticketNonce_1),ticketKey[]),nRW_1,mac((tagResumeW[],sidW_1,ticketNonce_1,nRW_1),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2))) that the attacker may have by 19 may be received at input {57}.
+So event gatewayAcceptsResume(sidW_1) may be executed at {63} in session @sid_3.
+inj-event(gatewayAcceptsResume(sidW_1),@occ63_1).
+
+23. By 22, inj-event(gatewayAcceptsResume(sidW_1),@occ63_1).
+The goal is reached, represented in the following fact:
+inj-event(gatewayAcceptsResume(sidW_1),@occ63_1).
+
+24. By 23, inj-event(gatewayAcceptsResume(sidW_1),@occ63_1).
+By 21, inj-event(gatewayAcceptsResume(sidW_1),@occ63_2).
+We have @occ63_1 ≠ @occ63_2.
+The goals for injectivity are reached, combined in the following fact:
+inj-event(gatewayAcceptsResume(sidW_1),@occ63_1) && inj-event(gatewayAcceptsResume(sidW_1),@occ63_2).
+
+
+Initial state
+
+Additional knowledge of the attacker:
+c
+gateway_id
+tagFinish
+tagFullG
+tagFullW
+tagResumeFinish
+tagResumeG
+tagResumeW
+wearable_id
+--------------------------------------------------------------
+New processes:
+    out(c, pk(skW));
+    out(c, pk(skG));
+    (
+        !
+        new sidW: bitstring;
+        new nW: bitstring;
+        event wearableStartsFull(sidW);
+        let sigW: bitstring = sign((tagFullW,wearable_id,gateway_id,sidW,nW),skW) in
+        out(c, (wearable_id,sidW,nW,sigW));
+        in(c, (=gateway_id,=sidW,=nW,nG: bitstring,ct: bitstring,sigG: bitstring));
+        let verifiedG: bitstring = checksign(sigG,pk(skG)) in
+        if (verifiedG = (tagFullG,gateway_id,wearable_id,sidW,nW,nG,ct)) then
+        let kemSecret: bitstring = kemDecap(ct,skW) in
+        event wearableAcceptsGateway(sidW);
+        in(c, protectedData: bitstring);
+        let sessionKey: bitstring = kdf(kemSecret,sidW,nW,nG) in
+        let receivedData: bitstring = aeadDecrypt(protectedData,sessionKey) in
+        if (receivedData = (sidW,healthcareData)) then
+        event wearableReceivesHealthcareData(sidW);
+        out(c, mac((tagFinish,sidW,nG),sessionKey));
+        in(c, ticketForWearable: bitstring);
+        out(c, ticketForWearable)
+    ) | (
+        !
+        in(c, (=wearable_id,sidG: bitstring,nWG: bitstring,sigWG: bitstring));
+        let verifiedW: bitstring = checksign(sigWG,pk(skW)) in
+        if (verifiedW = (tagFullW,wearable_id,gateway_id,sidG,nWG)) then
+        new nG_1: bitstring;
+        new kemSeed: bitstring;
+        event gatewayInitiatesFull(sidG);
+        let ct_1: bitstring = kemEncap(kemSeed,pk(skW)) in
+        let sigG_1: bitstring = sign((tagFullG,gateway_id,wearable_id,sidG,nWG,nG_1,ct_1),skG) in
+        out(c, (gateway_id,sidG,nWG,nG_1,ct_1,sigG_1));
+        event gatewaySendsHealthcareData(sidG);
+        let kemSecret_1: bitstring = kemShared(kemSeed,pk(skW)) in
+        let sessionKey_1: bitstring = kdf(kemSecret_1,sidG,nWG,nG_1) in
+        out(c, aeadEncrypt((sidG,healthcareData),sessionKey_1));
+        in(c, finishMessage: bitstring);
+        let verifiedFinish: bitstring = checkmac(finishMessage,sessionKey_1) in
+        if (verifiedFinish = (tagFinish,sidG,nG_1)) then
+        event gatewayAcceptsWearable(sidG);
+        new ticketNonce: bitstring;
+        let ticket: bitstring = makeTicket((sidG,sessionKey_1,ticketNonce),ticketKey) in
+        out(c, ticket)
+    ) | (
+        !
+        in(c, ticketW: bitstring);
+        let openedTicketW: bitstring = openTicket(ticketW,ticketKey) in
+        let (sidRW: bitstring,oldKeyW: bitstring,ticketNonceW: bitstring) = openedTicketW in
+        new nRW: bitstring;
+        event wearableStartsResume(sidRW);
+        out(c, (ticketW,nRW,mac((tagResumeW,sidRW,ticketNonceW,nRW),oldKeyW)));
+        in(c, (nRG: bitstring,proofG: bitstring));
+        let verifiedResumeG: bitstring = checkmac(proofG,oldKeyW) in
+        if (verifiedResumeG = (tagResumeG,sidRW,ticketNonceW,nRW,nRG)) then
+        event wearableAcceptsResume(sidRW);
+        let resumedKey: bitstring = kdf(oldKeyW,sidRW,nRW,nRG) in
+        out(c, mac((tagResumeFinish,sidRW,nRG),resumedKey))
+    ) | (
+        !
+        in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+        let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+        let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+        let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+        if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+        new nRG_1: bitstring;
+        event gatewayAcceptsResume(sidRG);
+        out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+        in(c, resumeFinish: bitstring);
+        let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+        let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+        if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+        event wearableAcceptsResume(sidRG)
+    )
+
+--------------------------------------------------------------
+1st process: out(c, ~M) with ~M = pk(skW) done
+
+Additional knowledge of the attacker:
+~M = pk(skW)
+--------------------------------------------------------------
+1st process: out(c, ~M_1) with ~M_1 = pk(skG) done
+
+Additional knowledge of the attacker:
+~M_1 = pk(skG)
+--------------------------------------------------------------
+1st process: Reduction |
+
+2nd process: Reduction |
+
+3rd process: Reduction |
+
+4th process: Reduction ! 2 copy(ies)
+
+5th process: Beginning of process GatewayResume
+
+4th process: Beginning of process GatewayResume
+
+3rd process: Reduction ! 1 copy(ies)
+
+3rd process: Beginning of process WearableResume
+
+2nd process: Reduction ! 1 copy(ies)
+
+2nd process: Beginning of process GatewayFull
+
+1st process: Reduction ! 1 copy(ies)
+
+1st process: Beginning of process WearableFull
+
+1st process: new sidW: bitstring creating sidW_2
+
+1st process: new nW: bitstring creating nW_2
+
+1st process: event wearableStartsFull(sidW_2) executed
+
+1st process: let sigW: bitstring = sign((tagFullW,wearable_id,gateway_id,sidW_2,nW_2),skW) succeeds
+
+1st process: out(c, (~M_2,~M_3,~M_4,~M_5)) with ~M_2 = wearable_id, ~M_3 = sidW_2, ~M_4 = nW_2, ~M_5 = sign((tagFullW,wearable_id,gateway_id,sidW_2,nW_2),skW) done
+
+Additional knowledge of the attacker:
+~M_5 = sign((tagFullW,wearable_id,gateway_id,sidW_2,nW_2),skW)
+~M_4 = nW_2
+~M_3 = sidW_2
+--------------------------------------------------------------
+New processes:
+(
+    in(c, (=gateway_id,=sidW_2,=nW_2,nG: bitstring,ct: bitstring,sigG: bitstring));
+    let verifiedG: bitstring = checksign(sigG,pk(skG)) in
+    if (verifiedG = (tagFullG,gateway_id,wearable_id,sidW_2,nW_2,nG,ct)) then
+    let kemSecret: bitstring = kemDecap(ct,skW) in
+    event wearableAcceptsGateway(sidW_2);
+    in(c, protectedData: bitstring);
+    let sessionKey: bitstring = kdf(kemSecret,sidW_2,nW_2,nG) in
+    let receivedData: bitstring = aeadDecrypt(protectedData,sessionKey) in
+    if (receivedData = (sidW_2,healthcareData)) then
+    event wearableReceivesHealthcareData(sidW_2);
+    out(c, mac((tagFinish,sidW_2,nG),sessionKey));
+    in(c, ticketForWearable: bitstring);
+    out(c, ticketForWearable)
+) | (
+    in(c, (=wearable_id,sidG: bitstring,nWG: bitstring,sigWG: bitstring));
+    let verifiedW: bitstring = checksign(sigWG,pk(skW)) in
+    if (verifiedW = (tagFullW,wearable_id,gateway_id,sidG,nWG)) then
+    new nG_1: bitstring;
+    new kemSeed: bitstring;
+    event gatewayInitiatesFull(sidG);
+    let ct_1: bitstring = kemEncap(kemSeed,pk(skW)) in
+    let sigG_1: bitstring = sign((tagFullG,gateway_id,wearable_id,sidG,nWG,nG_1,ct_1),skG) in
+    out(c, (gateway_id,sidG,nWG,nG_1,ct_1,sigG_1));
+    event gatewaySendsHealthcareData(sidG);
+    let kemSecret_1: bitstring = kemShared(kemSeed,pk(skW)) in
+    let sessionKey_1: bitstring = kdf(kemSecret_1,sidG,nWG,nG_1) in
+    out(c, aeadEncrypt((sidG,healthcareData),sessionKey_1));
+    in(c, finishMessage: bitstring);
+    let verifiedFinish: bitstring = checkmac(finishMessage,sessionKey_1) in
+    if (verifiedFinish = (tagFinish,sidG,nG_1)) then
+    event gatewayAcceptsWearable(sidG);
+    new ticketNonce: bitstring;
+    let ticket: bitstring = makeTicket((sidG,sessionKey_1,ticketNonce),ticketKey) in
+    out(c, ticket)
+) | (
+    in(c, ticketW: bitstring);
+    let openedTicketW: bitstring = openTicket(ticketW,ticketKey) in
+    let (sidRW: bitstring,oldKeyW: bitstring,ticketNonceW: bitstring) = openedTicketW in
+    new nRW: bitstring;
+    event wearableStartsResume(sidRW);
+    out(c, (ticketW,nRW,mac((tagResumeW,sidRW,ticketNonceW,nRW),oldKeyW)));
+    in(c, (nRG: bitstring,proofG: bitstring));
+    let verifiedResumeG: bitstring = checkmac(proofG,oldKeyW) in
+    if (verifiedResumeG = (tagResumeG,sidRW,ticketNonceW,nRW,nRG)) then
+    event wearableAcceptsResume(sidRW);
+    let resumedKey: bitstring = kdf(oldKeyW,sidRW,nRW,nRG) in
+    out(c, mac((tagResumeFinish,sidRW,nRG),resumedKey))
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+)
+
+--------------------------------------------------------------
+2nd process: in(c, (=wearable_id,sidG: bitstring,nWG: bitstring,sigWG: bitstring)) done with message (wearable_id,~M_3,~M_4,~M_5) = (wearable_id,sidW_2,nW_2,sign((tagFullW,wearable_id,gateway_id,sidW_2,nW_2),skW))
+
+2nd process: let verifiedW: bitstring = (tagFullW,wearable_id,gateway_id,sidW_2,nW_2) succeeds
+
+2nd process: if ((tagFullW,wearable_id,gateway_id,sidW_2,nW_2) = (tagFullW,wearable_id,gateway_id,sidW_2,nW_2)) succeeds
+
+2nd process: new nG_1: bitstring creating nG_3
+
+2nd process: new kemSeed: bitstring creating kemSeed_2
+
+2nd process: event gatewayInitiatesFull(sidW_2) executed
+
+2nd process: let ct_1: bitstring = kemEncap(kemSeed_2,pk(skW)) succeeds
+
+2nd process: let sigG_1: bitstring = sign((tagFullG,gateway_id,wearable_id,sidW_2,nW_2,nG_3,kemEncap(kemSeed_2,pk(skW))),skG) succeeds
+
+2nd process: out(c, (~M_6,~M_7,~M_8,~M_9,~M_10,~M_11)) with ~M_6 = gateway_id, ~M_7 = sidW_2, ~M_8 = nW_2, ~M_9 = nG_3, ~M_10 = kemEncap(kemSeed_2,pk(skW)), ~M_11 = sign((tagFullG,gateway_id,wearable_id,sidW_2,nW_2,nG_3,kemEncap(kemSeed_2,pk(skW))),skG) done
+
+Additional knowledge of the attacker:
+~M_11 = sign((tagFullG,gateway_id,wearable_id,sidW_2,nW_2,nG_3,kemEncap(kemSeed_2,pk(skW))),skG)
+~M_10 = kemEncap(kemSeed_2,pk(skW))
+~M_9 = nG_3
+--------------------------------------------------------------
+2nd process: event gatewaySendsHealthcareData(sidW_2) executed
+
+2nd process: let kemSecret_1: bitstring = kemShared(kemSeed_2,pk(skW)) succeeds
+
+2nd process: let sessionKey_1: bitstring = kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3) succeeds
+
+2nd process: out(c, ~M_12) with ~M_12 = aeadEncrypt((sidW_2,healthcareData),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) done
+
+Additional knowledge of the attacker:
+~M_12 = aeadEncrypt((sidW_2,healthcareData),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3))
+--------------------------------------------------------------
+New processes:
+(
+    in(c, (=gateway_id,=sidW_2,=nW_2,nG: bitstring,ct: bitstring,sigG: bitstring));
+    let verifiedG: bitstring = checksign(sigG,pk(skG)) in
+    if (verifiedG = (tagFullG,gateway_id,wearable_id,sidW_2,nW_2,nG,ct)) then
+    let kemSecret: bitstring = kemDecap(ct,skW) in
+    event wearableAcceptsGateway(sidW_2);
+    in(c, protectedData: bitstring);
+    let sessionKey: bitstring = kdf(kemSecret,sidW_2,nW_2,nG) in
+    let receivedData: bitstring = aeadDecrypt(protectedData,sessionKey) in
+    if (receivedData = (sidW_2,healthcareData)) then
+    event wearableReceivesHealthcareData(sidW_2);
+    out(c, mac((tagFinish,sidW_2,nG),sessionKey));
+    in(c, ticketForWearable: bitstring);
+    out(c, ticketForWearable)
+) | (
+    in(c, finishMessage: bitstring);
+    let verifiedFinish: bitstring = checkmac(finishMessage,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) in
+    if (verifiedFinish = (tagFinish,sidW_2,nG_3)) then
+    event gatewayAcceptsWearable(sidW_2);
+    new ticketNonce: bitstring;
+    let ticket: bitstring = makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce),ticketKey) in
+    out(c, ticket)
+) | (
+    in(c, ticketW: bitstring);
+    let openedTicketW: bitstring = openTicket(ticketW,ticketKey) in
+    let (sidRW: bitstring,oldKeyW: bitstring,ticketNonceW: bitstring) = openedTicketW in
+    new nRW: bitstring;
+    event wearableStartsResume(sidRW);
+    out(c, (ticketW,nRW,mac((tagResumeW,sidRW,ticketNonceW,nRW),oldKeyW)));
+    in(c, (nRG: bitstring,proofG: bitstring));
+    let verifiedResumeG: bitstring = checkmac(proofG,oldKeyW) in
+    if (verifiedResumeG = (tagResumeG,sidRW,ticketNonceW,nRW,nRG)) then
+    event wearableAcceptsResume(sidRW);
+    let resumedKey: bitstring = kdf(oldKeyW,sidRW,nRW,nRG) in
+    out(c, mac((tagResumeFinish,sidRW,nRG),resumedKey))
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+)
+
+--------------------------------------------------------------
+1st process: in(c, (=gateway_id,=sidW_2,=nW_2,nG: bitstring,ct: bitstring,sigG: bitstring)) done with message (gateway_id,~M_3,~M_4,~M_9,~M_10,~M_11) = (gateway_id,sidW_2,nW_2,nG_3,kemEncap(kemSeed_2,pk(skW)),sign((tagFullG,gateway_id,wearable_id,sidW_2,nW_2,nG_3,kemEncap(kemSeed_2,pk(skW))),skG))
+
+1st process: let verifiedG: bitstring = (tagFullG,gateway_id,wearable_id,sidW_2,nW_2,nG_3,kemEncap(kemSeed_2,pk(skW))) succeeds
+
+1st process: if ((tagFullG,gateway_id,wearable_id,sidW_2,nW_2,nG_3,kemEncap(kemSeed_2,pk(skW))) = (tagFullG,gateway_id,wearable_id,sidW_2,nW_2,nG_3,kemEncap(kemSeed_2,pk(skW)))) succeeds
+
+1st process: let kemSecret: bitstring = kemShared(kemSeed_2,pk(skW)) succeeds
+
+1st process: event wearableAcceptsGateway(sidW_2) executed
+
+New processes:
+(
+    in(c, protectedData: bitstring);
+    let sessionKey: bitstring = kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3) in
+    let receivedData: bitstring = aeadDecrypt(protectedData,sessionKey) in
+    if (receivedData = (sidW_2,healthcareData)) then
+    event wearableReceivesHealthcareData(sidW_2);
+    out(c, mac((tagFinish,sidW_2,nG_3),sessionKey));
+    in(c, ticketForWearable: bitstring);
+    out(c, ticketForWearable)
+) | (
+    in(c, finishMessage: bitstring);
+    let verifiedFinish: bitstring = checkmac(finishMessage,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) in
+    if (verifiedFinish = (tagFinish,sidW_2,nG_3)) then
+    event gatewayAcceptsWearable(sidW_2);
+    new ticketNonce: bitstring;
+    let ticket: bitstring = makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce),ticketKey) in
+    out(c, ticket)
+) | (
+    in(c, ticketW: bitstring);
+    let openedTicketW: bitstring = openTicket(ticketW,ticketKey) in
+    let (sidRW: bitstring,oldKeyW: bitstring,ticketNonceW: bitstring) = openedTicketW in
+    new nRW: bitstring;
+    event wearableStartsResume(sidRW);
+    out(c, (ticketW,nRW,mac((tagResumeW,sidRW,ticketNonceW,nRW),oldKeyW)));
+    in(c, (nRG: bitstring,proofG: bitstring));
+    let verifiedResumeG: bitstring = checkmac(proofG,oldKeyW) in
+    if (verifiedResumeG = (tagResumeG,sidRW,ticketNonceW,nRW,nRG)) then
+    event wearableAcceptsResume(sidRW);
+    let resumedKey: bitstring = kdf(oldKeyW,sidRW,nRW,nRG) in
+    out(c, mac((tagResumeFinish,sidRW,nRG),resumedKey))
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+)
+
+--------------------------------------------------------------
+1st process: in(c, protectedData: bitstring) done with message ~M_12 = aeadEncrypt((sidW_2,healthcareData),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3))
+
+1st process: let sessionKey: bitstring = kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3) succeeds
+
+1st process: let receivedData: bitstring = (sidW_2,healthcareData) succeeds
+
+1st process: if ((sidW_2,healthcareData) = (sidW_2,healthcareData)) succeeds
+
+1st process: event wearableReceivesHealthcareData(sidW_2) executed
+
+1st process: out(c, ~M_13) with ~M_13 = mac((tagFinish,sidW_2,nG_3),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) done
+
+Additional knowledge of the attacker:
+~M_13 = mac((tagFinish,sidW_2,nG_3),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3))
+--------------------------------------------------------------
+New processes:
+(
+    in(c, ticketForWearable: bitstring);
+    out(c, ticketForWearable)
+) | (
+    in(c, finishMessage: bitstring);
+    let verifiedFinish: bitstring = checkmac(finishMessage,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) in
+    if (verifiedFinish = (tagFinish,sidW_2,nG_3)) then
+    event gatewayAcceptsWearable(sidW_2);
+    new ticketNonce: bitstring;
+    let ticket: bitstring = makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce),ticketKey) in
+    out(c, ticket)
+) | (
+    in(c, ticketW: bitstring);
+    let openedTicketW: bitstring = openTicket(ticketW,ticketKey) in
+    let (sidRW: bitstring,oldKeyW: bitstring,ticketNonceW: bitstring) = openedTicketW in
+    new nRW: bitstring;
+    event wearableStartsResume(sidRW);
+    out(c, (ticketW,nRW,mac((tagResumeW,sidRW,ticketNonceW,nRW),oldKeyW)));
+    in(c, (nRG: bitstring,proofG: bitstring));
+    let verifiedResumeG: bitstring = checkmac(proofG,oldKeyW) in
+    if (verifiedResumeG = (tagResumeG,sidRW,ticketNonceW,nRW,nRG)) then
+    event wearableAcceptsResume(sidRW);
+    let resumedKey: bitstring = kdf(oldKeyW,sidRW,nRW,nRG) in
+    out(c, mac((tagResumeFinish,sidRW,nRG),resumedKey))
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+)
+
+--------------------------------------------------------------
+2nd process: in(c, finishMessage: bitstring) done with message ~M_13 = mac((tagFinish,sidW_2,nG_3),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3))
+
+2nd process: let verifiedFinish: bitstring = (tagFinish,sidW_2,nG_3) succeeds
+
+2nd process: if ((tagFinish,sidW_2,nG_3) = (tagFinish,sidW_2,nG_3)) succeeds
+
+2nd process: event gatewayAcceptsWearable(sidW_2) executed
+
+2nd process: new ticketNonce: bitstring creating ticketNonce_2
+
+2nd process: let ticket: bitstring = makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2),ticketKey) succeeds
+
+2nd process: out(c, ~M_14) with ~M_14 = makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2),ticketKey) done
+
+Additional knowledge of the attacker:
+~M_14 = makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2),ticketKey)
+--------------------------------------------------------------
+2nd process: Reduction 0
+
+New processes:
+(
+    in(c, ticketForWearable: bitstring);
+    out(c, ticketForWearable)
+) | (
+    in(c, ticketW: bitstring);
+    let openedTicketW: bitstring = openTicket(ticketW,ticketKey) in
+    let (sidRW: bitstring,oldKeyW: bitstring,ticketNonceW: bitstring) = openedTicketW in
+    new nRW: bitstring;
+    event wearableStartsResume(sidRW);
+    out(c, (ticketW,nRW,mac((tagResumeW,sidRW,ticketNonceW,nRW),oldKeyW)));
+    in(c, (nRG: bitstring,proofG: bitstring));
+    let verifiedResumeG: bitstring = checkmac(proofG,oldKeyW) in
+    if (verifiedResumeG = (tagResumeG,sidRW,ticketNonceW,nRW,nRG)) then
+    event wearableAcceptsResume(sidRW);
+    let resumedKey: bitstring = kdf(oldKeyW,sidRW,nRW,nRG) in
+    out(c, mac((tagResumeFinish,sidRW,nRG),resumedKey))
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+)
+
+--------------------------------------------------------------
+2nd process: in(c, ticketW: bitstring) done with message ~M_14 = makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2),ticketKey)
+
+2nd process: let openedTicketW: bitstring = (sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2) succeeds
+
+2nd process: let (sidRW: bitstring,oldKeyW: bitstring,ticketNonceW: bitstring) = (sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2) succeeds
+
+2nd process: new nRW: bitstring creating nRW_2
+
+2nd process: event wearableStartsResume(sidW_2) executed
+
+2nd process: out(c, (~M_15,~M_16,~M_17)) with ~M_15 = makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2),ticketKey), ~M_16 = nRW_2, ~M_17 = mac((tagResumeW,sidW_2,ticketNonce_2,nRW_2),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) done
+
+Additional knowledge of the attacker:
+~M_17 = mac((tagResumeW,sidW_2,ticketNonce_2,nRW_2),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3))
+~M_16 = nRW_2
+--------------------------------------------------------------
+New processes:
+(
+    in(c, ticketForWearable: bitstring);
+    out(c, ticketForWearable)
+) | (
+    in(c, (nRG: bitstring,proofG: bitstring));
+    let verifiedResumeG: bitstring = checkmac(proofG,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) in
+    if (verifiedResumeG = (tagResumeG,sidW_2,ticketNonce_2,nRW_2,nRG)) then
+    event wearableAcceptsResume(sidW_2);
+    let resumedKey: bitstring = kdf(kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),sidW_2,nRW_2,nRG) in
+    out(c, mac((tagResumeFinish,sidW_2,nRG),resumedKey))
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+)
+
+--------------------------------------------------------------
+3rd process: in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring)) done with message (~M_14,~M_16,~M_17) = (makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2),ticketKey),nRW_2,mac((tagResumeW,sidW_2,ticketNonce_2,nRW_2),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)))
+
+3rd process: let openedTicketG: bitstring = (sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2) succeeds
+
+3rd process: let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = (sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2) succeeds
+
+3rd process: let verifiedResumeW: bitstring = (tagResumeW,sidW_2,ticketNonce_2,nRW_2) succeeds
+
+3rd process: if ((tagResumeW,sidW_2,ticketNonce_2,nRW_2) = (tagResumeW,sidW_2,ticketNonce_2,nRW_2)) succeeds
+
+3rd process: new nRG_1: bitstring creating nRG_2
+
+3rd process: event gatewayAcceptsResume(sidW_2) executed; it is a goal
+
+3rd process: out(c, (~M_18,~M_19)) with ~M_18 = nRG_2, ~M_19 = mac((tagResumeG,sidW_2,ticketNonce_2,nRW_2,nRG_2),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) done
+
+Additional knowledge of the attacker:
+~M_19 = mac((tagResumeG,sidW_2,ticketNonce_2,nRW_2,nRG_2),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3))
+~M_18 = nRG_2
+--------------------------------------------------------------
+New processes:
+(
+    in(c, ticketForWearable: bitstring);
+    out(c, ticketForWearable)
+) | (
+    in(c, (nRG: bitstring,proofG: bitstring));
+    let verifiedResumeG: bitstring = checkmac(proofG,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) in
+    if (verifiedResumeG = (tagResumeG,sidW_2,ticketNonce_2,nRW_2,nRG)) then
+    event wearableAcceptsResume(sidW_2);
+    let resumedKey: bitstring = kdf(kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),sidW_2,nRW_2,nRG) in
+    out(c, mac((tagResumeFinish,sidW_2,nRG),resumedKey))
+) | (
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),sidW_2,nRW_2,nRG_2) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidW_2,nRG_2)) then
+    event wearableAcceptsResume(sidW_2)
+) | (
+    in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring));
+    let openedTicketG: bitstring = openTicket(ticketG,ticketKey) in
+    let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = openedTicketG in
+    let verifiedResumeW: bitstring = checkmac(proofW,oldKeyG) in
+    if (verifiedResumeW = (tagResumeW,sidRG,ticketNonceG,nRWG)) then
+    new nRG_1: bitstring;
+    event gatewayAcceptsResume(sidRG);
+    out(c, (nRG_1,mac((tagResumeG,sidRG,ticketNonceG,nRWG,nRG_1),oldKeyG)));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(oldKeyG,sidRG,nRWG,nRG_1) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidRG,nRG_1)) then
+    event wearableAcceptsResume(sidRG)
+)
+
+--------------------------------------------------------------
+4th process: in(c, (ticketG: bitstring,nRWG: bitstring,proofW: bitstring)) done with message (~M_14,~M_16,~M_17) = (makeTicket((sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2),ticketKey),nRW_2,mac((tagResumeW,sidW_2,ticketNonce_2,nRW_2),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)))
+
+4th process: let openedTicketG: bitstring = (sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2) succeeds
+
+4th process: let (sidRG: bitstring,oldKeyG: bitstring,ticketNonceG: bitstring) = (sidW_2,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),ticketNonce_2) succeeds
+
+4th process: let verifiedResumeW: bitstring = (tagResumeW,sidW_2,ticketNonce_2,nRW_2) succeeds
+
+4th process: if ((tagResumeW,sidW_2,ticketNonce_2,nRW_2) = (tagResumeW,sidW_2,ticketNonce_2,nRW_2)) succeeds
+
+4th process: new nRG_1: bitstring creating nRG_3
+
+4th process: event gatewayAcceptsResume(sidW_2) executed; it is a goal
+
+New processes:
+(
+    in(c, ticketForWearable: bitstring);
+    out(c, ticketForWearable)
+) | (
+    in(c, (nRG: bitstring,proofG: bitstring));
+    let verifiedResumeG: bitstring = checkmac(proofG,kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3)) in
+    if (verifiedResumeG = (tagResumeG,sidW_2,ticketNonce_2,nRW_2,nRG)) then
+    event wearableAcceptsResume(sidW_2);
+    let resumedKey: bitstring = kdf(kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),sidW_2,nRW_2,nRG) in
+    out(c, mac((tagResumeFinish,sidW_2,nRG),resumedKey))
+) | (
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),sidW_2,nRW_2,nRG_2) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidW_2,nRG_2)) then
+    event wearableAcceptsResume(sidW_2)
+) | (
+    out(c, (nRG_3,mac((tagResumeG,sidW_2,ticketNonce_2,nRW_2,nRG_3),kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3))));
+    in(c, resumeFinish: bitstring);
+    let resumedKey_1: bitstring = kdf(kdf(kemShared(kemSeed_2,pk(skW)),sidW_2,nW_2,nG_3),sidW_2,nRW_2,nRG_3) in
+    let verifiedResumeFinish: bitstring = checkmac(resumeFinish,resumedKey_1) in
+    if (verifiedResumeFinish = (tagResumeFinish,sidW_2,nRG_3)) then
+    event wearableAcceptsResume(sidW_2)
+)
+
+--------------------------------------------------------------
+The event gatewayAcceptsResume(sidW_2) is executed at {63} in copy a.
+The event gatewayAcceptsResume(sidW_2) is executed at {63} in copy a_1.
+A trace has been found.
+RESULT inj-event(gatewayAcceptsResume(sid_1)) ==> inj-event(wearableStartsResume(sid_1)) is false.
+RESULT (but event(gatewayAcceptsResume(sid_1)) ==> event(wearableStartsResume(sid_1)) is true.)
+-- Query inj-event(wearableReceivesHealthcareData(sid_1)) ==> inj-event(gatewaySendsHealthcareData(sid_1)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query inj-event(wearableReceivesHealthcareData(sid_1)) ==> inj-event(gatewaySendsHealthcareData(sid_1))
+goal reachable: b-inj-event(gatewaySendsHealthcareData(sidW_1),@occ34_1) && b-event(@p_act(@occ15_8,aeadEncrypt((sidW_1,healthcareData[]),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)))) && b-event(@p_act(@occ23_8,(wearable_id[],sidW_1,nW_1,sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[])))) && b-event(@p_act(@occ9_8,(gateway_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[])),sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[])))) -> inj-event(wearableReceivesHealthcareData(sidW_1),@occ18_1)
+The 1st, 2nd, 3rd, 4th hypotheses occur strictly before the conclusion.
+Abbreviations:
+sidW_1 = sidW[!1 = @sid]
+nW_1 = nW[!1 = @sid]
+kemSeed_1 = kemSeed[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+nG_2 = nG_1[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+@occ18_1 = @occ18[protectedData = aeadEncrypt((sidW_1,healthcareData[]),kdf(kemShared(kemSeed_1,pk(skW[])),sidW_1,nW_1,nG_2)),sigG = sign((tagFullG[],gateway_id[],wearable_id[],sidW_1,nW_1,nG_2,kemEncap(kemSeed_1,pk(skW[]))),skG[]),ct = kemEncap(kemSeed_1,pk(skW[])),nG = nG_2,!1 = @sid]
+@occ34_1 = @occ34[sigWG = sign((tagFullW[],wearable_id[],gateway_id[],sidW_1,nW_1),skW[]),nWG = nW_1,sidG = sidW_1,!1 = @sid_1]
+@occ15_8 = @occ15_7[!1 = @sid]
+@occ23_8 = @occ23_7[!1 = @sid_1]
+@occ9_8 = @occ9_7[!1 = @sid]
+RESULT inj-event(wearableReceivesHealthcareData(sid_1)) ==> inj-event(gatewaySendsHealthcareData(sid_1)) is true.
+
+--------------------------------------------------------------
+Verification summary:
+
+Query not attacker(skW[]) is true.
+
+Query not attacker(skG[]) is true.
+
+Query not attacker(ticketKey[]) is true.
+
+Query not attacker(healthcareData[]) is true.
+
+Query inj-event(wearableAcceptsGateway(sid_1)) ==> inj-event(gatewayInitiatesFull(sid_1)) is true.
+
+Query inj-event(gatewayAcceptsWearable(sid_1)) ==> inj-event(wearableAcceptsGateway(sid_1)) is true.
+
+Query inj-event(gatewayAcceptsResume(sid_1)) ==> inj-event(wearableStartsResume(sid_1)) is false.
+
+Query inj-event(wearableReceivesHealthcareData(sid_1)) ==> inj-event(gatewaySendsHealthcareData(sid_1)) is true.
+
+--------------------------------------------------------------
+

@@ -1,0 +1,27 @@
+# Python virtual environment
+.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment/secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+
+# Raw/reproducibility dataset - obtain separately
+data/raw/
+
+# Large generated evidence/archive packages
+CLAUDE_EVIDENCE_PACKAGE/
+SSM_FINAL_REBUILD_CLAUDE_PACKAGE_*.zip
+SSM_FINAL_REBUILD_2026_SOURCE.zip
+
+# Temporary/rendering files
+final_render/

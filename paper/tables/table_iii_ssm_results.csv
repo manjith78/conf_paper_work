@@ -1,0 +1,4 @@
+Activity,n_sessions,Full/24h,Resume/24h,Proposed(ms/24h),AlwaysFull(ms/24h),ComputeReduction%,BandwidthReduction%
+STRESS,36,534.71,3780.8,10567.22,83586.49,87.36,78.55
+AEROBIC,30,690.43,3613.92,13574.16,83370.44,83.72,75.27
+ANAEROBIC,31,625.08,3689.71,12312.6,83572.66,85.27,76.67

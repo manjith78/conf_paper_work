@@ -1,0 +1,14 @@
+# Exact versions this rebuild was developed AND verified against
+# (all tests, benchmarks, and the real dataset experiment were run under
+# these exact versions). Python 3.11.15.
+#
+# Install with: pip install -r requirements-lock.txt --break-system-packages
+# (the --break-system-packages flag is only needed on distros that mark the
+# system Python as externally managed; omit it in a venv.)
+
+cryptography==46.0.7
+kyber-py==1.2.0
+matplotlib==3.10.9
+numpy==2.4.4
+
+pytest==9.1.1

@@ -1,0 +1,66 @@
+{
+  "methodology": "Full/resume decisions are produced by src/ssm/ssm_engine.py's run_session(), the ONE authoritative SSM implementation, called decision-by-decision over each real session's real elapsed-time deltas and accelerometer-derived z-scores (data/processed/feature_table.csv). Per-event compute cost and bandwidth come from results/json/crypto_benchmark.json (real measured latencies) and src/protocol/protocol.py's real serialized message sizes -- not literature figures. 'real_wallclock_duration_sec' per session includes any real measured disconnection gap (per the frozen split-session decision) since that time really elapsed for the device. Real per-session rates are linearly extrapolated to a 24h-equivalent for comparability with an always-on deployment; this is the one disclosed modelling step, exactly as in the audited old paper (Sec. VIII).",
+  "config": {
+    "T_MAX_SEC": 900,
+    "R_MAX": 10,
+    "A_TH": 0.5,
+    "W1": 0.7,
+    "W2": 0.3,
+    "WINDOW_SEC": 20,
+    "failed_resumptions": "0 for all real-dataset windows (no real data source; see SSM_ALGORITHM_DECISION.md Sec. 3)"
+  },
+  "crypto_costs_used": {
+    "full_handshake_ms": 19.368878333333335,
+    "resumption_ms": 0.0556928,
+    "full_handshake_bytes": 928,
+    "resumption_bytes": 96,
+    "source": "results/json/crypto_benchmark.json (measured this run)"
+  },
+  "per_activity": {
+    "STRESS": {
+      "n_real_sessions": 36,
+      "mean_session_wallclock_duration_min": 42.27,
+      "mean_full_events_per_session": 15.6944,
+      "mean_resume_events_per_session": 110.9722,
+      "extrapolated_full_events_per_24h": 534.71,
+      "extrapolated_resume_events_per_24h": 3780.8,
+      "proposed_compute_ms_per_24h": 10567.22,
+      "proposed_compute_ms_per_24h_std_across_sessions": 1771.86,
+      "always_full_baseline_compute_ms_per_24h": 83586.49,
+      "compute_time_reduction_pct": 87.36,
+      "proposed_bytes_per_24h": 859164.0,
+      "always_full_baseline_bytes_per_24h": 4004788.3,
+      "bandwidth_reduction_pct": 78.55
+    },
+    "AEROBIC": {
+      "n_real_sessions": 30,
+      "mean_session_wallclock_duration_min": 36.5,
+      "mean_full_events_per_session": 17.5,
+      "mean_resume_events_per_session": 91.6,
+      "extrapolated_full_events_per_24h": 690.43,
+      "extrapolated_resume_events_per_24h": 3613.92,
+      "proposed_compute_ms_per_24h": 13574.16,
+      "proposed_compute_ms_per_24h_std_across_sessions": 3875.27,
+      "always_full_baseline_compute_ms_per_24h": 83370.44,
+      "compute_time_reduction_pct": 83.72,
+      "proposed_bytes_per_24h": 987657.0,
+      "always_full_baseline_bytes_per_24h": 3994437.0,
+      "bandwidth_reduction_pct": 75.27
+    },
+    "ANAEROBIC": {
+      "n_real_sessions": 31,
+      "mean_session_wallclock_duration_min": 26.75,
+      "mean_full_events_per_session": 11.6129,
+      "mean_resume_events_per_session": 68.5484,
+      "extrapolated_full_events_per_24h": 625.08,
+      "extrapolated_resume_events_per_24h": 3689.71,
+      "proposed_compute_ms_per_24h": 12312.6,
+      "proposed_compute_ms_per_24h_std_across_sessions": 2427.16,
+      "always_full_baseline_compute_ms_per_24h": 83572.66,
+      "compute_time_reduction_pct": 85.27,
+      "proposed_bytes_per_24h": 934286.8,
+      "always_full_baseline_bytes_per_24h": 4004126.0,
+      "bandwidth_reduction_pct": 76.67
+    }
+  }
+}
